@@ -16,11 +16,19 @@ func NewProtoReader(c net.Conn) *ProtoReader {
 	return &ProtoReader{c}
 }
 
-type MessageType int
+type MessageType byte
 
 const (
 	MessageTypeCat = MessageType(42)
 )
+
+func (m MessageType) String() string {
+	switch m {
+	case MessageTypeCat:
+		return "CAT"
+	}
+	return "UNKNOWN"
+}
 
 const maxMsgLen = 1 << 20
 
@@ -61,7 +69,11 @@ func GetCatName(b []byte) string {
 }
 
 func ConstructMessage(name string) []byte {
-	bt := []byte(name)
+
+	bt := []byte{
+		byte(MessageTypeCat),
+	}
+	bt = append(bt, []byte(name)...)
 	bt = append(bt, 0)
 	ln := len(bt)
 

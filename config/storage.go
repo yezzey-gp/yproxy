@@ -8,4 +8,6 @@ type Storage struct {
 	StorageBucket   string `json:"bucket" toml:"bucket" yaml:"bucket"`
 	GPGKeyId        string `json:"gpg_key_id" toml:"gpg_key_id" yaml:"gpg_key_id"`
 	GPGKeyPath      string `json:"gpg_key_path" toml:"gpg_key_path" yaml:"gpg_key_path"`
+
+	StorageRegion string `json:"region" toml:"region" yaml:"region"`
 }

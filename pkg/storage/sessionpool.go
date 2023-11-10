@@ -11,11 +11,17 @@ import (
 )
 
 type SessionPool interface {
-	GetSession() *s3.S3
+	GetSession() (*s3.S3, error)
 }
 
 type S3SessionPool struct {
-	cnf config.Storage
+	cnf *config.Storage
+}
+
+func NewSessionPool(cnf *config.Storage) SessionPool {
+	return &S3SessionPool{
+		cnf: cnf,
+	}
 }
 
 // TODO : unit tests
@@ -37,12 +43,13 @@ func (sp *S3SessionPool) createSession() (*session.Session, error) {
 		Providers:     providers,
 	})
 
+	s.Config.WithRegion(sp.cnf.StorageRegion)
+
 	s.Config.WithCredentials(newCredentials)
 	return s, err
 }
 
-func (s *S3SessionPool) GetObject() (*s3.S3, error) {
-
+func (s *S3SessionPool) GetSession() (*s3.S3, error) {
 	sess, err := s.createSession()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new session")

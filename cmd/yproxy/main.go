@@ -1,14 +1,10 @@
 package main
 
 import (
-	"net"
-	"os"
-
 	"github.com/spf13/cobra"
-	"github.com/yezzey-gp/yproxy/pkg/proc"
-	"github.com/yezzey-gp/yproxy/pkg/storage"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/core"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -28,26 +24,9 @@ var rootCmd = &cobra.Command{
 
 		instanceCnf := config.InstanceConfig()
 
-		logger := ylogger.NewZeroLogger(instanceCnf.LogPath)
+		instance := core.Instance{}
 
-		listener, err := net.Listen("unix", instanceCnf.SocketPath)
-		if err != nil {
-			logger.Error().Err(err).Msg("failed to start socket listener")
-			return err
-		}
-		defer listener.Close()
-		defer os.Remove(instanceCnf.SocketPath)
-
-		s := storage.NewStorage()
-
-		for {
-			clConn, err := listener.Accept()
-			if err != nil {
-				logger.Error().Err(err).Msg("failed to accept connection")
-			}
-			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
-			go proc.ProcConn(s, clConn)
-		}
+		return instance.Run(instanceCnf)
 	},
 }
 
