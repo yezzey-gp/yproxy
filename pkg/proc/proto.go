@@ -17,6 +17,10 @@ func NewProtoReader(c net.Conn) *ProtoReader {
 
 type MessageType int
 
+const (
+	MessageTypeCat = MessageType(42)
+)
+
 const maxMsgLen = 1 << 20
 
 func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
