@@ -25,18 +25,20 @@ var rootCmd = &cobra.Command{
 
 		instanceCnf := config.InstanceConfig()
 
-		con, err := net.Dial("tcp", instanceCnf.SocketPath)
+		con, err := net.Dial("unix", instanceCnf.SocketPath)
 
 		if err != nil {
 			return err
 		}
 
 		defer con.Close()
-
-		_, err = con.Write(proc.ConstructMessage(args[1]))
+		msg := proc.ConstructMessage(args[0])
+		_, err = con.Write(msg)
 		if err != nil {
 			return err
 		}
+
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		reply := make([]byte, 1024)
 
