@@ -59,3 +59,13 @@ func GetCatName(b []byte) string {
 
 	return buff.String()
 }
+
+func ConstructMessage(name string) []byte {
+	bt := []byte(name)
+	bt = append(bt, 0)
+	ln := len(bt)
+
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, ln)
+	return append(bs, bt)
+}
