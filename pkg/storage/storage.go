@@ -38,7 +38,9 @@ func (s *S3StorageReader) CatFileFromStorage(name string) (io.Reader, error) {
 		Key:    aws.String(objectPath),
 	}
 
-	ylogger.Zero.Debug().Str("key", objectPath).Str("bucket", s.cnf.StorageBucket).Msg("requesting external storage")
+	ylogger.Zero.Debug().Str("key", objectPath).Str("bucket",
+		s.cnf.StorageBucket).Msg("requesting external storage")
+
 	object, err := sess.GetObject(input)
 	return object.Body, err
 }

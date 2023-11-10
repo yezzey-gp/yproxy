@@ -20,7 +20,8 @@ func ProcConn(s storage.StorageReader, c net.Conn) error {
 
 	switch tp {
 	case MessageTypeCat:
-		name := GetCatName(body)
+		// omit first byte
+		name := GetCatName(body[1:])
 		ylogger.Zero.Debug().Str("object-path", name).Msg("cat object ")
 		r, err := s.CatFileFromStorage(name)
 		if err != nil {

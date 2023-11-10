@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
 type SessionPool interface {
@@ -35,6 +36,9 @@ func (sp *S3SessionPool) createSession() (*session.Session, error) {
 		AccessKeyID:     sp.cnf.AccessKeyId,
 		SecretAccessKey: sp.cnf.SecretAccessKey,
 	}}
+
+	ylogger.Zero.Debug().Str("endpoint", sp.cnf.StorageEndpoint).Msg("acquire external storage session")
+
 	providers := make([]credentials.Provider, 0)
 	providers = append(providers, provider)
 	providers = append(providers, defaults.CredProviders(s.Config, defaults.Handlers())...)
@@ -44,6 +48,8 @@ func (sp *S3SessionPool) createSession() (*session.Session, error) {
 	})
 
 	s.Config.WithRegion(sp.cnf.StorageRegion)
+
+	s.Config.WithEndpoint(sp.cnf.StorageEndpoint)
 
 	s.Config.WithCredentials(newCredentials)
 	return s, err
