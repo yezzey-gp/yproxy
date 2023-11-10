@@ -66,6 +66,6 @@ func ConstructMessage(name string) []byte {
 	ln := len(bt)
 
 	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, ln)
-	return append(bs, bt)
+	binary.LittleEndian.PutUint32(bs, uint32(ln))
+	return append(bs, bt...)
 }

@@ -20,7 +20,7 @@ var rootCmd = &cobra.Command{
 	Short: "",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		err := config.LoadInstanceCfg(cfgPath)
+		err := config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
 		}

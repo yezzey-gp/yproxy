@@ -6,17 +6,19 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
 var cfgPath string
+var logLevel string
 
 var rootCmd = &cobra.Command{
 	Use:   "",
 	Short: "",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		err := config.LoadInstanceCfg(cfgPath)
+		err := config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
 		}
@@ -31,7 +33,7 @@ var rootCmd = &cobra.Command{
 
 		defer con.Close()
 
-		_, err = con.Write(ConstructMessage(Args[1]))
+		_, err = con.Write(proc.ConstructMessage(args[1]))
 		if err != nil {
 			return err
 		}
@@ -45,6 +47,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		fmt.Println("reply:", string(reply))
+
+		return nil
 	},
 }
 

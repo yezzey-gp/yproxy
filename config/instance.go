@@ -12,11 +12,11 @@ import (
 )
 
 type Instance struct {
-	StorageCnf Storage `json:"storage"`
-	ProxyCnf   Proxy   `json:"proxy"`
+	StorageCnf Storage `json:"storage" toml:"storage" yaml:"storage"`
+	ProxyCnf   Proxy   `json:"proxy" toml:"proxy" yaml:"proxy"`
 
-	LogPath    string `json:"log_path"`
-	SocketPath string `json:"socket_path"`
+	LogPath    string `json:"log_path" toml:"log_path" yaml:"log_path"`
+	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
 }
 
 var cfgInstance Instance
