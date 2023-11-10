@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -47,6 +48,14 @@ func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
 }
 
 func GetCatName(b []byte) string {
+	buff := bytes.NewBufferString("")
 
-	return ""
+	for i := 0; i < len(b); i++ {
+		if b[i] == 0 {
+			break
+		}
+		buff.WriteByte(b[i])
+	}
+
+	return buff.String()
 }

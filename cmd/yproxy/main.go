@@ -11,20 +11,25 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-var port int = 1337
+var cfgPath string
 
-var sockPath string = "/tmp/yezzey.sock"
+var logLevel string
 
 var rootCmd = &cobra.Command{
-	Use:   "run",
-	Short: "run router",
+	Use:   "",
+	Short: "",
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		err := config.LoadInstanceCfg(cfgPath)
+		if err != nil {
+			return err
+		}
 
 		instanceCnf := config.InstanceConfig()
 
 		logger := ylogger.NewZeroLogger(instanceCnf.LogPath)
 
-		listener, err := net.Listen("unix", sockPath)
+		listener, err := net.Listen("unix", instanceCnf.SocketPath)
 		if err != nil {
 			logger.Error().Err(err).Msg("failed to start socket listener")
 			return err
@@ -41,6 +46,11 @@ var rootCmd = &cobra.Command{
 			go proc.ProcConn(s, clConn)
 		}
 	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "/etc/yproxy/yproxy.yaml", "path to yproxy config file")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "", "log level")
 }
 
 func main() {

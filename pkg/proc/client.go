@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/yezzey-gp/yproxy/pkg/storage"
+	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
 func ProcConn(s storage.StorageReader, c net.Conn) error {
@@ -16,6 +17,7 @@ func ProcConn(s storage.StorageReader, c net.Conn) error {
 	switch tp {
 	case MessageTypeCat:
 		name := GetCatName(body)
+		ylogger.Zero.Debug().Str("object-path", name).Msg("recieved cat request")
 		r, err := s.CatFileFromStorage(name)
 		if err != nil {
 			return err
