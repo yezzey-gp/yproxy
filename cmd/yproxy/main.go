@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
@@ -35,6 +36,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 		defer listener.Close()
+		defer os.Remove(instanceCnf.SocketPath)
 
 		s := storage.NewStorage()
 
@@ -43,6 +45,7 @@ var rootCmd = &cobra.Command{
 			if err != nil {
 				logger.Error().Err(err).Msg("failed to accept connection")
 			}
+			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
 			go proc.ProcConn(s, clConn)
 		}
 	},

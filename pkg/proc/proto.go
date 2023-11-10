@@ -25,7 +25,7 @@ const (
 const maxMsgLen = 1 << 20
 
 func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
-	msgLenBuf := make([]byte, 4)
+	msgLenBuf := make([]byte, 8)
 	_, err := io.ReadFull(r.c, msgLenBuf)
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to read params: %w", err)
@@ -65,7 +65,7 @@ func ConstructMessage(name string) []byte {
 	bt = append(bt, 0)
 	ln := len(bt)
 
-	bs := make([]byte, 4)
-	binary.LittleEndian.PutUint32(bs, uint32(ln))
+	bs := make([]byte, 8)
+	binary.BigEndian.PutUint64(bs, uint64(ln))
 	return append(bs, bt...)
 }
