@@ -5,6 +5,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"github.com/yezzey-gp/yproxy/pkg/storage"
+
+	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -16,7 +19,10 @@ var rootCmd = &cobra.Command{
 	Use:   "run",
 	Short: "run router",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		logger := ylogger.NewZeroLogger("proxy.log")
+
+		instanceCnf := config.InstanceConfig()
+
+		logger := ylogger.NewZeroLogger(instanceCnf.LogPath)
 
 		listener, err := net.Listen("unix", sockPath)
 		if err != nil {
@@ -25,12 +31,14 @@ var rootCmd = &cobra.Command{
 		}
 		defer listener.Close()
 
+		s := storage.NewStorage()
+
 		for {
 			clConn, err := listener.Accept()
 			if err != nil {
 				logger.Error().Err(err).Msg("failed to accept connection")
 			}
-			go proc.ProcConn(clConn)
+			go proc.ProcConn(s, clConn)
 		}
 	},
 }

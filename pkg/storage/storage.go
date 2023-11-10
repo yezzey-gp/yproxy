@@ -3,30 +3,32 @@ package storage
 import (
 	"io"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/pkg/errors"
+	"github.com/yezzey-gp/yproxy/config"
 )
 
-type SessionPool struct {
-}
-
 type StorageReader interface {
+	CatFileFromStorage(name string) (io.Reader, error)
 }
 
 type S3StorageReader struct {
+	pool SessionPool
+	cnf  config.Storage
 }
 
-func NewStorage(bucket, name string) StorageReader {
-	sess, err := createSession(bucket, settings)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create new session")
-	}
-	client := s3.New(sess)
-
+func NewStorage() StorageReader {
 	return &S3StorageReader{}
 }
 
-func (s *S3StorageReader) CatFileFromStorage(name string) io.Reader {
+func (s *S3StorageReader) CatFileFromStorage(name string) (io.Reader, error) {
+	sess := s.pool.GetSession()
+	objectPath := name
+	input := &s3.GetObjectInput{
+		Bucket: &s.cnf.StorageBucket,
+		Key:    aws.String(objectPath),
+	}
 
-	return nil
+	object, err := sess.GetObject(input)
+	return object.Body, err
 }
