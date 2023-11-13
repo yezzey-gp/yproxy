@@ -20,7 +20,8 @@ type Instance struct {
 	LogPath    string `json:"log_path" toml:"log_path" yaml:"log_path"`
 	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
 
-	SystemdSocketPath string
+	SystemdNotificationsDebug bool `json:"sd_notifications_debug", toml:"sd_notifications_debug" yaml:"sd_notifications_debug"`
+	SystemdSocketPath         string
 }
 
 var cfgInstance Instance

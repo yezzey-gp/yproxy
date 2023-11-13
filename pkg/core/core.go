@@ -67,7 +67,7 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 
 	cr := crypt.NewCrypto(&instanceCnf.CryptoCnf)
 
-	notifier = sdnotifier.NewNotifier(instanceCnf.SystemdSocketPath, false)
+	notifier = sdnotifier.NewNotifier(instanceCnf.SystemdSocketPath, instanceCnf.SystemdNotificationsDebug)
 	notifier.Ready()
 
 	go func() {
