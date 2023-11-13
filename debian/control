@@ -1,0 +1,14 @@
+Source: yproxy
+Section: database
+Priority: optional
+Maintainer: Kirill Reshke <reshke@yandex-team.ru>
+Build-Depends: 
+Standards-Version: 3.8.0
+Homepage: https://github.com/yezzey-gp/yproxy
+
+Package: yproxy
+Conflicts: 
+Architecture: any
+Depends: 
+Description: Local daemon for S3 access, caching & throttling
+ This package will install yproxy binaries into /usr/bin
