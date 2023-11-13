@@ -8,12 +8,14 @@ import (
 	"syscall"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
 type Instance struct {
+	crypter crypt.Crypter
 }
 
 func (i *Instance) Run(instanceCnf *config.Instance) error {
@@ -61,6 +63,8 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		&instanceCnf.StorageCnf,
 	)
 
+	cr := crypt.NewCrypto(&instanceCnf.CryptoCnf)
+
 	go func() {
 		<-ctx.Done()
 		os.Exit(0)
@@ -72,6 +76,6 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 			ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
 		}
 		ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
-		go proc.ProcConn(s, clConn)
+		go proc.ProcConn(s, cr, clConn)
 	}
 }

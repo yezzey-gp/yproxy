@@ -18,8 +18,11 @@ func NewProtoReader(c net.Conn) *ProtoReader {
 
 type MessageType byte
 
+type RequestEncryption byte
+
 const (
 	MessageTypeCat = MessageType(42)
+	DecryptMessage = RequestEncryption(1)
 )
 
 func (m MessageType) String() string {
@@ -72,6 +75,9 @@ func ConstructMessage(name string) []byte {
 
 	bt := []byte{
 		byte(MessageTypeCat),
+		byte(DecryptMessage),
+		0,
+		0,
 	}
 	bt = append(bt, []byte(name)...)
 	bt = append(bt, 0)

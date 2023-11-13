@@ -5,11 +5,12 @@ import (
 	"io"
 	"net"
 
+	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-func ProcConn(s storage.StorageReader, c net.Conn) error {
+func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 	pr := NewProtoReader(c)
 	tp, body, err := pr.ReadPacket()
 	if err != nil {
@@ -21,7 +22,7 @@ func ProcConn(s storage.StorageReader, c net.Conn) error {
 	switch tp {
 	case MessageTypeCat:
 		// omit first byte
-		name := GetCatName(body[1:])
+		name := GetCatName(body[4:])
 		ylogger.Zero.Debug().Str("object-path", name).Msg("cat object ")
 		r, err := s.CatFileFromStorage(name)
 		if err != nil {
@@ -31,6 +32,12 @@ func ProcConn(s storage.StorageReader, c net.Conn) error {
 			))
 
 			return err
+		}
+		if body[1] == byte(DecryptMessage) {
+			r, err = cr.Decrypt(r)
+			if err != nil {
+				return err
+			}
 		}
 		io.Copy(c, r)
 

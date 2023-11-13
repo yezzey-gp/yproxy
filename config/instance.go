@@ -15,6 +15,8 @@ type Instance struct {
 	StorageCnf Storage `json:"storage" toml:"storage" yaml:"storage"`
 	ProxyCnf   Proxy   `json:"proxy" toml:"proxy" yaml:"proxy"`
 
+	CryptoCnf Crypto `json:"crypto" toml:"crypto" yaml:"crypto"`
+
 	LogPath    string `json:"log_path" toml:"log_path" yaml:"log_path"`
 	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
 }
