@@ -20,18 +20,18 @@ type Instance struct {
 	LogPath    string `json:"log_path" toml:"log_path" yaml:"log_path"`
 	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
 
-	SystemdNotificationsDebug bool `json:"sd_notifications_debug", toml:"sd_notifications_debug" yaml:"sd_notifications_debug"`
+	SystemdNotificationsDebug bool `json:"sd_notifications_debug" toml:"sd_notifications_debug" yaml:"sd_notifications_debug"`
 	systemdSocketPath         string
 }
 
 func (i *Instance) ReadSystemdSocketPath() {
 	path := os.Getenv("NOTIFY_SOCKET")
-	if path != nil {
+	if path != "" {
 		i.systemdSocketPath = path
 	}
 }
 
-func (i *Instance) GetSystemdSocketPath() str {
+func (i *Instance) GetSystemdSocketPath() string {
 	return i.systemdSocketPath
 }
 
