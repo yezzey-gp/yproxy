@@ -3,4 +3,4 @@ socket_path: "/tmp/yezzey.sock"
 storage:
   storage_endpoint: "https://storage.yandexcloud.net"
   storage_prefix: "s3://gpyezzey/wal-e/6/"
-  bucket: "gpyezzey"
+  storage_bucket: "gpyezzey"
