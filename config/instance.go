@@ -19,6 +19,8 @@ type Instance struct {
 
 	LogPath    string `json:"log_path" toml:"log_path" yaml:"log_path"`
 	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
+
+	SystemdSocketPath string
 }
 
 var cfgInstance Instance
@@ -66,7 +68,16 @@ func LoadInstanceConfig(cfgPath string) error {
 		return err
 	}
 
+	setSystemdSocketPath(cfg)
+
 	log.Println("Running config:", string(configBytes))
 	cfgInstance = cfg
 	return nil
+}
+
+func setSystemdSocketPath(cfgInstance *Instance) {
+	path := os.Getenv("NOTIFY_SOCKET")
+	if path != nil {
+		cfgInstance.SystemdSocketPath = path
+	}
 }
