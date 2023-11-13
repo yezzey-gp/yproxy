@@ -23,7 +23,7 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 	case MessageTypeCat:
 		// omit first byte
 		name := GetCatName(body[4:])
-		ylogger.Zero.Debug().Str("object-path", name).Msg("cat object ")
+		ylogger.Zero.Debug().Str("object-path", name).Msg("cat object")
 		r, err := s.CatFileFromStorage(name)
 		if err != nil {
 
@@ -34,8 +34,14 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 			return err
 		}
 		if body[1] == byte(DecryptMessage) {
+			ylogger.Zero.Debug().Str("object-path", name).Msg("decrypt object ")
 			r, err = cr.Decrypt(r)
 			if err != nil {
+
+				_, _ = c.Write([]byte(
+					fmt.Sprintf("failed to compelete request: %v", err),
+				))
+
 				return err
 			}
 		}

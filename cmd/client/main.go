@@ -12,6 +12,7 @@ import (
 
 var cfgPath string
 var logLevel string
+var decrypt bool
 
 var rootCmd = &cobra.Command{
 	Use:   "",
@@ -32,7 +33,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		defer con.Close()
-		msg := proc.ConstructMessage(args[0])
+		msg := proc.ConstructMessage(args[0], decrypt)
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -57,6 +58,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "/etc/yproxy/yproxy.yaml", "path to yproxy config file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "", "log level")
+	rootCmd.PersistentFlags().BoolVarP(&decrypt, "decrypt", "d", false, "decrypt external object or not")
 }
 
 func main() {

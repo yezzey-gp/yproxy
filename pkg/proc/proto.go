@@ -21,8 +21,9 @@ type MessageType byte
 type RequestEncryption byte
 
 const (
-	MessageTypeCat = MessageType(42)
-	DecryptMessage = RequestEncryption(1)
+	MessageTypeCat   = MessageType(42)
+	DecryptMessage   = RequestEncryption(1)
+	NoDecryptMessage = RequestEncryption(0)
 )
 
 func (m MessageType) String() string {
@@ -71,14 +72,21 @@ func GetCatName(b []byte) string {
 	return buff.String()
 }
 
-func ConstructMessage(name string) []byte {
+func ConstructMessage(name string, decrypt bool) []byte {
 
 	bt := []byte{
 		byte(MessageTypeCat),
-		byte(DecryptMessage),
+		0,
 		0,
 		0,
 	}
+
+	if decrypt {
+		bt[1] = byte(DecryptMessage)
+	} else {
+		bt[1] = byte(NoDecryptMessage)
+	}
+
 	bt = append(bt, []byte(name)...)
 	bt = append(bt, 0)
 	ln := len(bt)
