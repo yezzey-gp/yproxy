@@ -47,8 +47,6 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		// fmt.Println("reply:", string(reply))
-		//
 		return nil
 	},
 }

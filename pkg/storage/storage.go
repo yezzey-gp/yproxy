@@ -2,6 +2,7 @@ package storage
 
 import (
 	"io"
+	"path"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -32,7 +33,7 @@ func (s *S3StorageReader) CatFileFromStorage(name string) (io.Reader, error) {
 		return nil, err
 	}
 
-	objectPath := name
+	objectPath := path.Join(s.cnf.StoragePrefix, name)
 	input := &s3.GetObjectInput{
 		Bucket: &s.cnf.StorageBucket,
 		Key:    aws.String(objectPath),

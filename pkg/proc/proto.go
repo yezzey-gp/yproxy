@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 
+	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -14,8 +15,10 @@ type ProtoReader struct {
 	c net.Conn
 }
 
-func NewProtoReader(c net.Conn) *ProtoReader {
-	return &ProtoReader{c}
+func NewProtoReader(ycl *client.YClient) *ProtoReader {
+	return &ProtoReader{
+		c: ycl.Conn,
+	}
 }
 
 type MessageType byte
