@@ -6,10 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"github.com/yezzey-gp/yproxy/pkg/sdnotifier"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -64,6 +66,19 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 	)
 
 	cr := crypt.NewCrypto(&instanceCnf.CryptoCnf)
+
+	notifier, err := sdnotifier.NewNotifier(instanceCnf.GetSystemdSocketPath(), instanceCnf.SystemdNotificationsDebug)
+	if err != nil {
+		ylogger.Zero.Error().Err(err).Msg("failed to initialize systemd notifier")
+	}
+	notifier.Ready()
+
+	go func() {
+		for {
+			notifier.Notify()
+			time.Sleep(sdnotifier.Timeout)
+		}
+	}()
 
 	go func() {
 		<-ctx.Done()
