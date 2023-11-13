@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 )
@@ -68,10 +69,10 @@ func (g *GPGCrypter) loadSecret() error {
 
 func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
 	err := g.loadSecret()
-
 	if err != nil {
 		return nil, err
 	}
+	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
 
 	md, err := openpgp.ReadMessage(reader, g.SecretKey, nil, nil)
 
