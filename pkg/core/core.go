@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/sdnotifier"
@@ -91,6 +92,6 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 			ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
 		}
 		ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
-		go proc.ProcConn(s, cr, clConn)
+		go proc.ProcConn(s, cr, client.NewYClient(clConn))
 	}
 }
