@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"io"
 	"path"
 
@@ -27,7 +28,8 @@ func NewStorage(cnf *config.Storage) StorageReader {
 }
 
 func (s *S3StorageReader) CatFileFromStorage(name string) (io.Reader, error) {
-	sess, err := s.pool.GetSession()
+	// XXX: fix this
+	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
 		return nil, err

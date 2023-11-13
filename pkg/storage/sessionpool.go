@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/defaults"
@@ -9,19 +11,25 @@ import (
 	"github.com/pkg/errors"
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
+
+	"golang.org/x/sync/semaphore"
 )
 
 type SessionPool interface {
-	GetSession() (*s3.S3, error)
+	GetSession(ctx context.Context) (*s3.S3, error)
 }
 
 type S3SessionPool struct {
 	cnf *config.Storage
+
+	sem *semaphore.Weighted
 }
 
 func NewSessionPool(cnf *config.Storage) SessionPool {
+
 	return &S3SessionPool{
 		cnf: cnf,
+		sem: semaphore.NewWeighted(cnf.StorageConcurrency),
 	}
 }
 
@@ -55,7 +63,10 @@ func (sp *S3SessionPool) createSession() (*session.Session, error) {
 	return s, err
 }
 
-func (s *S3SessionPool) GetSession() (*s3.S3, error) {
+func (s *S3SessionPool) GetSession(ctx context.Context) (*s3.S3, error) {
+	s.sem.Acquire(ctx, 1)
+	defer s.sem.Release(1)
+
 	sess, err := s.createSession()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create new session")

@@ -55,6 +55,16 @@ func initInstanceConfig(file *os.File, cfgInstance *Instance) error {
 	return fmt.Errorf("unknown config format type: %s. Use .toml, .yaml or .json suffix in filename", file.Name())
 }
 
+const (
+	DefaultStorageConcurrency = 100
+)
+
+func EmbeddDafults(cfgInstance *Instance) {
+	if cfgInstance.StorageCnf.StorageConcurrency == 0 {
+		cfgInstance.StorageCnf.StorageConcurrency = DefaultStorageConcurrency
+	}
+}
+
 func LoadInstanceConfig(cfgPath string) error {
 	var cfg Instance
 	file, err := os.Open(cfgPath)
