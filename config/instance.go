@@ -59,7 +59,7 @@ const (
 	DefaultStorageConcurrency = 100
 )
 
-func EmbeddDafults(cfgInstance *Instance) {
+func EmbedDefaults(cfgInstance *Instance) {
 	if cfgInstance.StorageCnf.StorageConcurrency == 0 {
 		cfgInstance.StorageCnf.StorageConcurrency = DefaultStorageConcurrency
 	}
@@ -91,6 +91,7 @@ func LoadInstanceConfig(cfgPath string) error {
 	}
 
 	cfg.ReadSystemdSocketPath()
+	EmbedDefaults(&cfg)
 
 	log.Println("Running config:", string(configBytes))
 	cfgInstance = cfg
