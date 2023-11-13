@@ -21,7 +21,18 @@ type Instance struct {
 	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
 
 	SystemdNotificationsDebug bool `json:"sd_notifications_debug", toml:"sd_notifications_debug" yaml:"sd_notifications_debug"`
-	SystemdSocketPath         string
+	systemdSocketPath         string
+}
+
+func (i *Instance) ReadSystemdSocketPath() {
+	path := os.Getenv("NOTIFY_SOCKET")
+	if path != nil {
+		i.systemdSocketPath = path
+	}
+}
+
+func (i *Instance) GetSystemdSocketPath() str {
+	return i.systemdSocketPath
 }
 
 var cfgInstance Instance
@@ -69,16 +80,9 @@ func LoadInstanceConfig(cfgPath string) error {
 		return err
 	}
 
-	setSystemdSocketPath(cfg)
+	cfg.ReadSystemdSocketPath()
 
 	log.Println("Running config:", string(configBytes))
 	cfgInstance = cfg
 	return nil
-}
-
-func setSystemdSocketPath(cfgInstance *Instance) {
-	path := os.Getenv("NOTIFY_SOCKET")
-	if path != nil {
-		cfgInstance.SystemdSocketPath = path
-	}
 }
