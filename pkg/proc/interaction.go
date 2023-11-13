@@ -14,6 +14,12 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 	pr := NewProtoReader(c)
 	tp, body, err := pr.ReadPacket()
 	if err != nil {
+		ylogger.Zero.Debug().Err(err).Msg("failed to compelete request")
+
+		_, _ = c.Write([]byte(
+			fmt.Sprintf("failed to compelete request: %v", err),
+		))
+
 		return err
 	}
 
@@ -27,6 +33,8 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 		r, err := s.CatFileFromStorage(name)
 		if err != nil {
 
+			ylogger.Zero.Debug().Err(err).Msg("failed to compelete request")
+
 			_, _ = c.Write([]byte(
 				fmt.Sprintf("failed to compelete request: %v", err),
 			))
@@ -37,6 +45,7 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 			ylogger.Zero.Debug().Str("object-path", name).Msg("decrypt object ")
 			r, err = cr.Decrypt(r)
 			if err != nil {
+				ylogger.Zero.Debug().Err(err).Msg("failed to compelete request")
 
 				_, _ = c.Write([]byte(
 					fmt.Sprintf("failed to compelete request: %v", err),
@@ -48,6 +57,9 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, c net.Conn) error {
 		io.Copy(c, r)
 
 	default:
+
+		ylogger.Zero.Debug().Int("type", int(tp)).Msg("wrong request type")
+
 		_, err := c.Write([]byte(
 			"wrong request type",
 		))
