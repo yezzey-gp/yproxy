@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"io"
 	"net"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
@@ -41,16 +42,13 @@ var rootCmd = &cobra.Command{
 
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
-		reply := make([]byte, 1024)
-
-		_, err = con.Read(reply)
-
+		_, err = io.Copy(os.Stdout, con)
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("reply:", string(reply))
-
+		// fmt.Println("reply:", string(reply))
+		//
 		return nil
 	},
 }
