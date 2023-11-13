@@ -1,4 +1,4 @@
-package app
+package sdnotifier
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ func NewNotifier(ns string, debug bool) (*Notifier, error) {
 	if err != nil {
 		sock = nil
 		if debug {
-			return nil, err
+			return &Notifier{sock: nil, debug: debug}, err
 		}
 	}
 
