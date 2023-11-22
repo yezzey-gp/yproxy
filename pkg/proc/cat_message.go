@@ -41,7 +41,16 @@ func (c *CatMessage) Encode() []byte {
 	return append(bs, bt...)
 }
 
-func GetCatName(b []byte) string {
+func (c *CatMessage) Decode(body []byte) error {
+	c.Name = c.GetCatName(body[4:])
+	if body[1] == byte(DecryptMessage) {
+		c.Decrypt = true
+	}
+
+	return nil
+}
+
+func (c *CatMessage) GetCatName(b []byte) string {
 	buff := bytes.NewBufferString("")
 
 	for i := 0; i < len(b); i++ {

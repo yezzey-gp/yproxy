@@ -24,16 +24,17 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, ycl *client.YClient) er
 	switch tp {
 	case MessageTypeCat:
 		// omit first byte
-		name := GetCatName(body[4:])
-		ylogger.Zero.Debug().Str("object-path", name).Msg("cat object")
-		r, err := s.CatFileFromStorage(name)
+		msg := CatMessage{}
+		msg.Decode(body)
+		ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("cat object")
+		r, err := s.CatFileFromStorage(msg.Name)
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to compelete request")
 
 			return err
 		}
-		if body[1] == byte(DecryptMessage) {
-			ylogger.Zero.Debug().Str("object-path", name).Msg("decrypt object ")
+		if msg.Decrypt {
+			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object ")
 			r, err = cr.Decrypt(r)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to compelete request")
@@ -42,6 +43,8 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, ycl *client.YClient) er
 			}
 		}
 		io.Copy(ycl.Conn, r)
+
+	case MessageTypePut:
 
 	default:
 
