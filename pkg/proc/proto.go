@@ -20,25 +20,6 @@ func NewProtoReader(ycl *client.YClient) *ProtoReader {
 	}
 }
 
-type MessageType byte
-
-type RequestEncryption byte
-
-const (
-	MessageTypeCat   = MessageType(42)
-	MessageTypePut   = MessageType(43)
-	DecryptMessage   = RequestEncryption(1)
-	NoDecryptMessage = RequestEncryption(0)
-)
-
-func (m MessageType) String() string {
-	switch m {
-	case MessageTypeCat:
-		return "CAT"
-	}
-	return "UNKNOWN"
-}
-
 const maxMsgLen = 1 << 20
 
 func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
