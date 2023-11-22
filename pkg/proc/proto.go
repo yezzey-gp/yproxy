@@ -1,7 +1,6 @@
 package proc
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -19,24 +18,6 @@ func NewProtoReader(ycl *client.YClient) *ProtoReader {
 	return &ProtoReader{
 		c: ycl.Conn,
 	}
-}
-
-type MessageType byte
-
-type RequestEncryption byte
-
-const (
-	MessageTypeCat   = MessageType(42)
-	DecryptMessage   = RequestEncryption(1)
-	NoDecryptMessage = RequestEncryption(0)
-)
-
-func (m MessageType) String() string {
-	switch m {
-	case MessageTypeCat:
-		return "CAT"
-	}
-	return "UNKNOWN"
 }
 
 const maxMsgLen = 1 << 20
@@ -70,41 +51,4 @@ func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
 
 	msgType := MessageType(data[0])
 	return msgType, data, nil
-}
-
-func GetCatName(b []byte) string {
-	buff := bytes.NewBufferString("")
-
-	for i := 0; i < len(b); i++ {
-		if b[i] == 0 {
-			break
-		}
-		buff.WriteByte(b[i])
-	}
-
-	return buff.String()
-}
-
-func ConstructMessage(name string, decrypt bool) []byte {
-
-	bt := []byte{
-		byte(MessageTypeCat),
-		0,
-		0,
-		0,
-	}
-
-	if decrypt {
-		bt[1] = byte(DecryptMessage)
-	} else {
-		bt[1] = byte(NoDecryptMessage)
-	}
-
-	bt = append(bt, []byte(name)...)
-	bt = append(bt, 0)
-	ln := len(bt) + 8
-
-	bs := make([]byte, 8)
-	binary.BigEndian.PutUint64(bs, uint64(ln))
-	return append(bs, bt...)
 }
