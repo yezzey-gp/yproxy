@@ -14,6 +14,7 @@ const (
 	MessageTypePut             = MessageType(43)
 	MessageTypeCommandComplete = MessageType(44)
 	MessageTypeReadyForQuery   = MessageType(45)
+	MessageTypeCopyData        = MessageType(46)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)

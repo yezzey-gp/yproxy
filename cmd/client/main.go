@@ -84,9 +84,26 @@ var putCmd = &cobra.Command{
 
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
-		_, err = io.Copy(os.Stdin, con)
-		if err != nil {
-			return err
+		const SZ = 65536
+		chunk := make([]byte, SZ)
+		for {
+			n, err := os.Stdin.Read(chunk)
+			if n > 0 {
+				msg := proc.NewCopyDataMessage()
+				msg.Sz = n
+				copy(msg.Data, chunk[:n])
+
+				_, err = con.Write(msg.Encode())
+				if err != nil {
+					return err
+				}
+			}
+
+			if err == io.EOF {
+				break
+			} else {
+				return err
+			}
 		}
 
 		msg = proc.NewCommandCompleteMessage().Encode()

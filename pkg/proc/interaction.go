@@ -2,6 +2,7 @@ package proc
 
 import (
 	"io"
+	"sync"
 
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
@@ -9,7 +10,7 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-func ProcConn(s storage.StorageReader, cr crypt.Crypter, ycl *client.YClient) error {
+func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
 	pr := NewProtoReader(ycl)
 	tp, body, err := pr.ReadPacket()
 	if err != nil {
@@ -45,6 +46,52 @@ func ProcConn(s storage.StorageReader, cr crypt.Crypter, ycl *client.YClient) er
 		io.Copy(ycl.Conn, r)
 
 	case MessageTypePut:
+
+		msg := PutMessage{}
+		msg.Decode(body)
+
+		r, w := io.Pipe()
+
+		if msg.Encrypt {
+			w, err := cr.Encrypt(w)
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to encrypt")
+
+				return ycl.Conn.Close()
+			}
+		}
+
+		wg := sync.WaitGroup{}
+
+		go func() {
+			for {
+				tp, body, err := pr.ReadPacket()
+				if err != nil {
+
+					_ = ycl.ReplyError(err, "failed to compelete request")
+
+					_ = ycl.Conn.Close()
+					return
+				}
+
+				switch tp {
+				case MessageTypeCopyData:
+					msg := CopyDataMessage{}
+					msg.Decode(body)
+				}
+
+			}
+		}()
+
+		err := s.PutFileToDest(msg.Name, r)
+
+		wg.Wait()
+
+		if err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+
+			return ycl.Conn.Close()
+		}
 
 	default:
 

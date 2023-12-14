@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -15,19 +16,31 @@ type StorageReader interface {
 	CatFileFromStorage(name string) (io.Reader, error)
 }
 
-type S3StorageReader struct {
+type StorageWriter interface {
+	PutFileToDest(name string, r io.Reader) error
+}
+
+type StorageInteractor interface {
+	StorageReader
+	StorageWriter
+}
+
+type S3StorageInteractor struct {
+	StorageReader
+	StorageWriter
+
 	pool SessionPool
 	cnf  *config.Storage
 }
 
-func NewStorage(cnf *config.Storage) StorageReader {
-	return &S3StorageReader{
+func NewStorage(cnf *config.Storage) StorageInteractor {
+	return &S3StorageInteractor{
 		pool: NewSessionPool(cnf),
 		cnf:  cnf,
 	}
 }
 
-func (s *S3StorageReader) CatFileFromStorage(name string) (io.Reader, error) {
+func (s *S3StorageInteractor) CatFileFromStorage(name string) (io.Reader, error) {
 	// XXX: fix this
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
@@ -46,4 +59,31 @@ func (s *S3StorageReader) CatFileFromStorage(name string) (io.Reader, error) {
 
 	object, err := sess.GetObject(input)
 	return object.Body, err
+}
+
+func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader) error {
+	sess, err := s.pool.GetSession(context.TODO())
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
+		return nil
+	}
+
+	objectPath := path.Join(s.cnf.StoragePrefix, name)
+
+	up := s3manager.NewUploaderWithClient(sess, func(uploader *s3manager.Uploader) {
+		uploader.PartSize = int64(1 << 20)
+		uploader.Concurrency = 1
+	})
+
+	_, err = up.Upload(
+		&s3manager.UploadInput{
+
+			Bucket:       aws.String(s.cnf.StorageBucket),
+			Key:          aws.String(objectPath),
+			Body:         r,
+			StorageClass: aws.String("STANDARD"),
+		},
+	)
+
+	return err
 }
