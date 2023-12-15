@@ -4,3 +4,4 @@ storage:
   storage_endpoint: "https://storage.yandexcloud.net"
   storage_prefix: "s3://gpyezzey/wal-e/6/"
   storage_bucket: "gpyezzey"
+  storage_region: "us-west-2"

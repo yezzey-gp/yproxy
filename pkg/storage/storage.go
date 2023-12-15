@@ -71,7 +71,7 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader) error {
 	objectPath := path.Join(s.cnf.StoragePrefix, name)
 
 	up := s3manager.NewUploaderWithClient(sess, func(uploader *s3manager.Uploader) {
-		uploader.PartSize = int64(1 << 20)
+		uploader.PartSize = int64(1 << 24)
 		uploader.Concurrency = 1
 	})
 

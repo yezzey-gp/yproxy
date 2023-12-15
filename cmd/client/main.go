@@ -93,6 +93,8 @@ var putCmd = &cobra.Command{
 				msg.Sz = uint64(n)
 				copy(msg.Data, chunk[:n])
 
+				// ylogger.Zero.Debug().Bytes("msg-data", chunk).Uint("len", uint(msg.Sz)).Msg("")
+
 				_, err = con.Write(msg.Encode())
 				if err != nil {
 					return err

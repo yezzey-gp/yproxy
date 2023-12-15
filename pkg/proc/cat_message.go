@@ -6,10 +6,11 @@ import (
 )
 
 type CatMessage struct {
-	ProtoMessage
 	Decrypt bool
 	Name    string
 }
+
+var _ ProtoMessage = &CatMessage{}
 
 func NewCatMessage(name string, decrypt bool) *CatMessage {
 	return &CatMessage{
@@ -41,13 +42,11 @@ func (c *CatMessage) Encode() []byte {
 	return append(bs, bt...)
 }
 
-func (c *CatMessage) Decode(body []byte) error {
+func (c *CatMessage) Decode(body []byte) {
 	c.Name = c.GetCatName(body[4:])
 	if body[1] == byte(DecryptMessage) {
 		c.Decrypt = true
 	}
-
-	return nil
 }
 
 func (c *CatMessage) GetCatName(b []byte) string {
