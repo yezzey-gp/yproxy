@@ -20,7 +20,7 @@ func (cc *CopyDataMessage) Encode() []byte {
 	bt[0] = byte(MessageTypeCopyData)
 
 	// sizeof(sz) + data
-	ln := len(bt) + 8 + 8 + int(cc.Sz)
+	ln := len(bt) + 8
 
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, uint64(ln))

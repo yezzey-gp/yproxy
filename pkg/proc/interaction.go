@@ -78,6 +78,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					return
 				}
 
+				ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
+
 				switch tp {
 				case MessageTypeCopyData:
 					msg := CopyDataMessage{}
@@ -86,9 +88,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				case MessageTypeCommandComplete:
 					msg := CommandCompleteMessage{}
 					msg.Decode(body)
-				case MessageTypeReadyForQuery:
-					msg := ReadyForQueryMessage{}
-					msg.Decode(body)
+					w.Close()
+
+					ylogger.Zero.Debug().Msg("closing msg writer")
 					return
 				}
 			}

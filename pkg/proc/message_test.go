@@ -1,6 +1,7 @@
 package proc_test
 
 import (
+	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,6 +91,10 @@ func TestCopyDataMsg(t *testing.T) {
 		msg2 := proc.CopyDataMessage{}
 
 		msg2.Decode(body[8:])
+
+		sz := binary.BigEndian.Uint64(body[:8])
+
+		assert.Equal(int(sz), len(body))
 
 		assert.Equal(msg.Data, msg2.Data)
 		assert.Equal(msg.Sz, msg2.Sz)
