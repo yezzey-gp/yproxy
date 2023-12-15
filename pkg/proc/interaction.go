@@ -50,10 +50,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		msg := PutMessage{}
 		msg.Decode(body)
 
+		var w io.WriteCloser
+
 		r, w := io.Pipe()
 
 		if msg.Encrypt {
-			w, err := cr.Encrypt(w)
+			var err error
+			w, err = cr.Encrypt(w)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to encrypt")
 
@@ -78,6 +81,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				case MessageTypeCopyData:
 					msg := CopyDataMessage{}
 					msg.Decode(body)
+					w.Write(msg.Data)
+				case MessageTypeCommandComplete:
+
 				}
 
 			}

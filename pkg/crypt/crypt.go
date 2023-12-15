@@ -14,7 +14,7 @@ import (
 
 type Crypter interface {
 	Decrypt(reader io.Reader) (io.Reader, error)
-	Encrypt(writer io.Writer) (io.Writer, error)
+	Encrypt(writer io.WriteCloser) (io.WriteCloser, error)
 }
 
 type GPGCrypter struct {
@@ -84,7 +84,7 @@ func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
 	return md.UnverifiedBody, nil
 }
 
-func (g *GPGCrypter) Encrypt(writer io.Writer) (io.Writer, error) {
+func (g *GPGCrypter) Encrypt(writer io.WriteCloser) (io.WriteCloser, error) {
 	err := g.loadSecret()
 	if err != nil {
 		return nil, err
