@@ -3,6 +3,7 @@ package proc
 import "encoding/binary"
 
 type ReadyForQueryMessage struct {
+	ProtoMessage
 }
 
 func NewReadyForQueryMessage() *ReadyForQueryMessage {
@@ -22,4 +23,8 @@ func (cc *ReadyForQueryMessage) Encode() []byte {
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, uint64(ln))
 	return append(bs, bt...)
+}
+
+func (c *ReadyForQueryMessage) Decode(body []byte) error {
+	return nil
 }

@@ -14,6 +14,7 @@ import (
 
 type Crypter interface {
 	Decrypt(reader io.Reader) (io.Reader, error)
+	Encrypt(writer io.WriteCloser) (io.WriteCloser, error)
 }
 
 type GPGCrypter struct {
@@ -81,4 +82,20 @@ func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
 	}
 
 	return md.UnverifiedBody, nil
+}
+
+func (g *GPGCrypter) Encrypt(writer io.WriteCloser) (io.WriteCloser, error) {
+	err := g.loadSecret()
+	if err != nil {
+		return nil, err
+	}
+	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
+
+	encryptedWriter, err := openpgp.Encrypt(writer, g.PubKey, nil, nil, nil)
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return encryptedWriter, nil
 }

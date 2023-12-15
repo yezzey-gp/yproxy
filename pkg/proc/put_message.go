@@ -1,6 +1,9 @@
 package proc
 
-import "encoding/binary"
+import (
+	"bytes"
+	"encoding/binary"
+)
 
 type PutMessage struct {
 	ProtoMessage
@@ -36,4 +39,25 @@ func (c *PutMessage) Encode() []byte {
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, uint64(ln))
 	return append(bs, bt...)
+}
+
+func (c *PutMessage) GetPutName(b []byte) string {
+	buff := bytes.NewBufferString("")
+
+	for i := 0; i < len(b); i++ {
+		if b[i] == 0 {
+			break
+		}
+		buff.WriteByte(b[i])
+	}
+
+	return buff.String()
+}
+
+func (c *PutMessage) Decode(body []byte) error {
+	if body[1] == byte(EncryptMessage) {
+		c.Encrypt = true
+	}
+	c.Name = c.GetPutName(body[4:])
+	return nil
 }
