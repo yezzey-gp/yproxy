@@ -6,10 +6,11 @@ import (
 )
 
 type PutMessage struct {
-	ProtoMessage
 	Encrypt bool
 	Name    string
 }
+
+var _ ProtoMessage = &PutMessage{}
 
 func NewPutMessage(name string, encrypt bool) *PutMessage {
 	return &PutMessage{
@@ -20,7 +21,7 @@ func NewPutMessage(name string, encrypt bool) *PutMessage {
 
 func (c *PutMessage) Encode() []byte {
 	bt := []byte{
-		byte(MessageTypeCat),
+		byte(MessageTypePut),
 		0,
 		0,
 		0,
@@ -54,10 +55,9 @@ func (c *PutMessage) GetPutName(b []byte) string {
 	return buff.String()
 }
 
-func (c *PutMessage) Decode(body []byte) error {
+func (c *PutMessage) Decode(body []byte) {
 	if body[1] == byte(EncryptMessage) {
 		c.Encrypt = true
 	}
 	c.Name = c.GetPutName(body[4:])
-	return nil
 }

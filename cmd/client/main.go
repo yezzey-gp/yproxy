@@ -91,14 +91,20 @@ var putCmd = &cobra.Command{
 			if n > 0 {
 				msg := proc.NewCopyDataMessage()
 				msg.Sz = uint64(n)
+				msg.Data = make([]byte, msg.Sz)
 				copy(msg.Data, chunk[:n])
 
-				_, err = con.Write(msg.Encode())
+				nwr, err := con.Write(msg.Encode())
 				if err != nil {
 					return err
 				}
+
+				ylogger.Zero.Debug().Int("len", nwr).Msg("written copy data msg")
 			}
 
+			if err == nil {
+				continue
+			}
 			if err == io.EOF {
 				break
 			} else {
@@ -106,13 +112,9 @@ var putCmd = &cobra.Command{
 			}
 		}
 
-		msg = proc.NewCommandCompleteMessage().Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
+		ylogger.Zero.Debug().Msg("send command complete msg")
 
-		msg = proc.NewReadyForQueryMessage().Encode()
+		msg = proc.NewCommandCompleteMessage().Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err

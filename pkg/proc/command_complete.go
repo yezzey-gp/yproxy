@@ -3,8 +3,9 @@ package proc
 import "encoding/binary"
 
 type CommandCompleteMessage struct {
-	ProtoMessage
 }
+
+var _ ProtoMessage = &CommandCompleteMessage{}
 
 func NewCommandCompleteMessage() *CommandCompleteMessage {
 	return &CommandCompleteMessage{}
@@ -25,6 +26,5 @@ func (cc *CommandCompleteMessage) Encode() []byte {
 	return append(bs, bt...)
 }
 
-func (c *CommandCompleteMessage) Decode(body []byte) error {
-	return nil
+func (c *CommandCompleteMessage) Decode(body []byte) {
 }

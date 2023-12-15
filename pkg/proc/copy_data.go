@@ -15,12 +15,12 @@ func NewCopyDataMessage() *CopyDataMessage {
 }
 
 func (cc *CopyDataMessage) Encode() []byte {
-	bt := make([]byte, 4+cc.Sz)
+	bt := make([]byte, 4+8+cc.Sz)
 
 	bt[0] = byte(MessageTypeCopyData)
 
 	// sizeof(sz) + data
-	ln := len(bt) + 8 + 8 + int(cc.Sz)
+	ln := len(bt) + 8
 
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, uint64(ln))
@@ -28,7 +28,7 @@ func (cc *CopyDataMessage) Encode() []byte {
 	binary.BigEndian.PutUint64(bt[4:], uint64(cc.Sz))
 
 	// check data len more than cc.sz?
-	copy(bt[4+8:], cc.Data[:cc.Sz])
+	copy(bt[(4+8):], cc.Data[:cc.Sz])
 
 	return append(bs, bt...)
 }

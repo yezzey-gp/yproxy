@@ -1,6 +1,7 @@
 package proc_test
 
 import (
+	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,9 +30,8 @@ func TestCatMsg(t *testing.T) {
 
 		msg2 := proc.CatMessage{}
 
-		err := msg2.Decode(body[8:])
+		msg2.Decode(body[8:])
 
-		assert.NoError(err)
 		assert.Equal(msg.Name, msg2.Name)
 		assert.Equal(msg.Decrypt, msg2.Decrypt)
 	}
@@ -59,10 +59,44 @@ func TestPutMsg(t *testing.T) {
 
 		msg2 := proc.CatMessage{}
 
-		err := msg2.Decode(body[8:])
+		msg2.Decode(body[8:])
 
-		assert.NoError(err)
 		assert.Equal(msg.Name, msg2.Name)
 		assert.Equal(msg.Encrypt, msg2.Decrypt)
+	}
+}
+
+func TestCopyDataMsg(t *testing.T) {
+	assert := assert.New(t)
+
+	type tcase struct {
+		body []byte
+		err  error
+	}
+
+	for _, tt := range []tcase{
+		{
+			[]byte(
+				"hiuefheiufheuif",
+			),
+			nil,
+		},
+	} {
+
+		msg := proc.NewCopyDataMessage()
+		msg.Data = tt.body
+		msg.Sz = uint64(len(tt.body))
+		body := msg.Encode()
+
+		msg2 := proc.CopyDataMessage{}
+
+		msg2.Decode(body[8:])
+
+		sz := binary.BigEndian.Uint64(body[:8])
+
+		assert.Equal(int(sz), len(body))
+
+		assert.Equal(msg.Data, msg2.Data)
+		assert.Equal(msg.Sz, msg2.Sz)
 	}
 }

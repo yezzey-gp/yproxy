@@ -27,6 +27,14 @@ func (m MessageType) String() string {
 	switch m {
 	case MessageTypeCat:
 		return "CAT"
+	case MessageTypePut:
+		return "PUT"
+	case MessageTypeCommandComplete:
+		return "COMMAND COMPLETE"
+	case MessageTypeReadyForQuery:
+		return "READY FOR QUERY"
+	case MessageTypeCopyData:
+		return "COPY DATA"
 	}
 	return "UNKNOWN"
 }
