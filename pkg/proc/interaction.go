@@ -65,12 +65,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		}
 
 		wg := sync.WaitGroup{}
+		wg.Add(1)
 
 		go func() {
+			defer wg.Done()
 			for {
 				tp, body, err := pr.ReadPacket()
 				if err != nil {
-
 					_ = ycl.ReplyError(err, "failed to compelete request")
 
 					_ = ycl.Conn.Close()
@@ -83,9 +84,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					msg.Decode(body)
 					w.Write(msg.Data)
 				case MessageTypeCommandComplete:
-
+					msg := CommandCompleteMessage{}
+					msg.Decode(body)
+				case MessageTypeReadyForQuery:
+					msg := ReadyForQueryMessage{}
+					msg.Decode(body)
+					return
 				}
-
 			}
 		}()
 

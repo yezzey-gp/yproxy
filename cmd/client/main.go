@@ -90,7 +90,7 @@ var putCmd = &cobra.Command{
 			n, err := os.Stdin.Read(chunk)
 			if n > 0 {
 				msg := proc.NewCopyDataMessage()
-				msg.Sz = n
+				msg.Sz = uint64(n)
 				copy(msg.Data, chunk[:n])
 
 				_, err = con.Write(msg.Encode())
