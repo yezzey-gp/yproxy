@@ -45,6 +45,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		}
 		io.Copy(ycl.Conn, r)
 
+		_ = ycl.Conn.Close()
+
 	case MessageTypePut:
 
 		msg := PutMessage{}
@@ -99,6 +101,14 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		err := s.PutFileToDest(msg.Name, r)
 
 		wg.Wait()
+
+		if err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+
+			return ycl.Conn.Close()
+		}
+
+		_, err = ycl.Conn.Write(NewReadyForQueryMessage().Encode())
 
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
