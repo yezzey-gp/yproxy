@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -75,6 +77,9 @@ var putCmd = &cobra.Command{
 			return err
 		}
 
+		ycl := client.NewYClient(con)
+		r := proc.NewProtoReader(ycl)
+
 		defer con.Close()
 		msg := proc.NewPutMessage(args[0], encrypt).Encode()
 		_, err = con.Write(msg)
@@ -118,6 +123,19 @@ var putCmd = &cobra.Command{
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
+		}
+
+		tp, _, err := r.ReadPacket()
+		if err != nil {
+			return err
+		}
+
+		if tp == proc.MessageTypeReadyForQuery {
+			// ok
+
+			ylogger.Zero.Debug().Msg("got rfq")
+		} else {
+			return fmt.Errorf("failed to get rfq")
 		}
 
 		return nil
