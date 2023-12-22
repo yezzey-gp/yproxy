@@ -18,8 +18,7 @@ type Crypter interface {
 }
 
 type GPGCrypter struct {
-	PubKey    openpgp.EntityList
-	SecretKey openpgp.EntityList
+	EntityList openpgp.EntityList
 
 	cnf *config.Crypto
 }
@@ -63,7 +62,7 @@ func (g *GPGCrypter) loadSecret() error {
 		return errors.WithStack(err)
 	}
 
-	g.SecretKey = entityList
+	g.EntityList = entityList
 
 	return nil
 }
@@ -75,7 +74,7 @@ func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
 	}
 	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
 
-	md, err := openpgp.ReadMessage(reader, g.SecretKey, nil, nil)
+	md, err := openpgp.ReadMessage(reader, g.EntityList, nil, nil)
 
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -91,7 +90,7 @@ func (g *GPGCrypter) Encrypt(writer io.WriteCloser) (io.WriteCloser, error) {
 	}
 	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
 
-	encryptedWriter, err := openpgp.Encrypt(writer, g.PubKey, nil, nil, nil)
+	encryptedWriter, err := openpgp.Encrypt(writer, g.EntityList, nil, nil, nil)
 
 	if err != nil {
 		return nil, errors.WithStack(err)

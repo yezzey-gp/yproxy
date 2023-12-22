@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"fmt"
 	"io"
 	"sync"
 
@@ -56,21 +57,26 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 		r, w := io.Pipe()
 
-		if msg.Encrypt {
-			var err error
-			w, err = cr.Encrypt(w)
-			if err != nil {
-				_ = ycl.ReplyError(err, "failed to encrypt")
-
-				return ycl.Conn.Close()
-			}
-		}
-
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 
 		go func() {
+
+			var ww io.WriteCloser = w
+			if msg.Encrypt {
+				var err error
+				ww, err = cr.Encrypt(w)
+				if err != nil {
+					_ = ycl.ReplyError(err, "failed to encrypt")
+
+					ycl.Conn.Close()
+					return
+				}
+			}
+
+			defer w.Close()
 			defer wg.Done()
+
 			for {
 				tp, body, err := pr.ReadPacket()
 				if err != nil {
@@ -86,11 +92,28 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				case MessageTypeCopyData:
 					msg := CopyDataMessage{}
 					msg.Decode(body)
-					w.Write(msg.Data)
+					if n, err := ww.Write(msg.Data); err != nil {
+						_ = ycl.ReplyError(err, "failed to compelete request")
+
+						_ = ycl.Conn.Close()
+						return
+					} else if n != int(msg.Sz) {
+
+						_ = ycl.ReplyError(fmt.Errorf("unfull write"), "failed to compelete request")
+
+						_ = ycl.Conn.Close()
+						return
+					}
 				case MessageTypeCommandComplete:
 					msg := CommandCompleteMessage{}
 					msg.Decode(body)
-					w.Close()
+
+					if err := ww.Close(); err != nil {
+						_ = ycl.ReplyError(err, "failed to compelete request")
+
+						_ = ycl.Conn.Close()
+						return
+					}
 
 					ylogger.Zero.Debug().Msg("closing msg writer")
 					return
