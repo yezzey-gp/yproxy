@@ -23,9 +23,6 @@ type Instance struct {
 
 func (i *Instance) Run(instanceCnf *config.Instance) error {
 
-	ylogger.ReloadLogger(instanceCnf.LogPath)
-	ylogger.UpdateZeroLogLevel(instanceCnf.LogLevel)
-
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGUSR1, syscall.SIGUSR2)
 
