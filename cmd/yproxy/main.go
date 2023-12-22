@@ -26,6 +26,10 @@ var rootCmd = &cobra.Command{
 
 		instance := core.Instance{}
 
+		ylogger.ReloadLogger(instanceCnf.LogPath)
+		if logLevel == "" {
+			logLevel = instanceCnf.LogLevel
+		}
 		ylogger.UpdateZeroLogLevel(logLevel)
 
 		return instance.Run(instanceCnf)
@@ -34,7 +38,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "/etc/yproxy/yproxy.yaml", "path to yproxy config file")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "debug", "log level")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "", "log level")
 }
 
 func main() {
