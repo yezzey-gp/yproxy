@@ -51,12 +51,11 @@ func (n *Notifier) Notify() error {
 }
 
 func (n *Notifier) send(msg []byte) error {
-	ylogger.Zero.Debug().Msg(fmt.Sprintf("sending systemd notification: %s", msg))
-
 	if n.sock == nil {
 		return nil
 	}
 
+	ylogger.Zero.Debug().Msg(fmt.Sprintf("sending systemd notification: %s", msg))
 	_, err := n.sock.Write(msg)
 
 	if n.debug {
