@@ -74,6 +74,9 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 	notifier, err := sdnotifier.NewNotifier(instanceCnf.GetSystemdSocketPath(), instanceCnf.SystemdNotificationsDebug)
 	if err != nil {
 		ylogger.Zero.Error().Err(err).Msg("failed to initialize systemd notifier")
+		if instanceCnf.SystemdNotificationsDebug {
+			return err
+		}
 	}
 	notifier.Ready()
 
