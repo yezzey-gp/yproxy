@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 	Use:   "",
 	Short: "",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ylogger.Zero.Debug().Str("config-path", cfgPath).Msg("unsig config path")
+		ylogger.Zero.Debug().Str("config-path", cfgPath).Msg("using config path")
 		err := config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
