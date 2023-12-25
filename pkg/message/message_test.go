@@ -1,11 +1,11 @@
-package proc_test
+package message_test
 
 import (
 	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"github.com/yezzey-gp/yproxy/pkg/message"
 )
 
 func TestCatMsg(t *testing.T) {
@@ -25,10 +25,10 @@ func TestCatMsg(t *testing.T) {
 		},
 	} {
 
-		msg := proc.NewCatMessage(tt.name, tt.decrypt)
+		msg := message.NewCatMessage(tt.name, tt.decrypt)
 		body := msg.Encode()
 
-		msg2 := proc.CatMessage{}
+		msg2 := message.CatMessage{}
 
 		msg2.Decode(body[8:])
 
@@ -54,10 +54,10 @@ func TestPutMsg(t *testing.T) {
 		},
 	} {
 
-		msg := proc.NewPutMessage(tt.name, tt.encrypt)
+		msg := message.NewPutMessage(tt.name, tt.encrypt)
 		body := msg.Encode()
 
-		msg2 := proc.CatMessage{}
+		msg2 := message.CatMessage{}
 
 		msg2.Decode(body[8:])
 
@@ -83,12 +83,12 @@ func TestCopyDataMsg(t *testing.T) {
 		},
 	} {
 
-		msg := proc.NewCopyDataMessage()
+		msg := message.NewCopyDataMessage()
 		msg.Data = tt.body
 		msg.Sz = uint64(len(tt.body))
 		body := msg.Encode()
 
-		msg2 := proc.CopyDataMessage{}
+		msg2 := message.CopyDataMessage{}
 
 		msg2.Decode(body[8:])
 
