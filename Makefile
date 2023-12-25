@@ -7,5 +7,5 @@ build:
 ####################### TESTS #######################
 
 unittest:
-	go test -race ./pkg/proc/...
+	go test -race ./pkg/message/...
 
