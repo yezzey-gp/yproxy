@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg"
 	"github.com/yezzey-gp/yproxy/pkg/core"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -34,6 +35,7 @@ var rootCmd = &cobra.Command{
 
 		return instance.Run(instanceCnf)
 	},
+	Version:       pkg.YproxyVersionRevision,
 }
 
 func init() {
