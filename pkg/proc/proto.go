@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/yezzey-gp/yproxy/pkg/client"
+	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -22,7 +23,7 @@ func NewProtoReader(ycl *client.YClient) *ProtoReader {
 
 const maxMsgLen = 1 << 20
 
-func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
+func (r *ProtoReader) ReadPacket() (message.MessageType, []byte, error) {
 	msgLenBuf := make([]byte, 8)
 	_, err := io.ReadFull(r.c, msgLenBuf)
 	if err != nil {
@@ -49,6 +50,6 @@ func (r *ProtoReader) ReadPacket() (MessageType, []byte, error) {
 		return 0, nil, err
 	}
 
-	msgType := MessageType(data[0])
+	msgType := message.MessageType(data[0])
 	return msgType, data, nil
 }

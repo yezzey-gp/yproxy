@@ -7,6 +7,7 @@ import (
 
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
+	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -24,9 +25,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 	ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
 
 	switch tp {
-	case MessageTypeCat:
+	case message.MessageTypeCat:
 		// omit first byte
-		msg := CatMessage{}
+		msg := message.CatMessage{}
 		msg.Decode(body)
 		ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("cat object")
 		r, err := s.CatFileFromStorage(msg.Name)
@@ -48,9 +49,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 		_ = ycl.Conn.Close()
 
-	case MessageTypePut:
+	case message.MessageTypePut:
 
-		msg := PutMessage{}
+		msg := message.PutMessage{}
 		msg.Decode(body)
 
 		var w io.WriteCloser
@@ -89,8 +90,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
 
 				switch tp {
-				case MessageTypeCopyData:
-					msg := CopyDataMessage{}
+				case message.MessageTypeCopyData:
+					msg := message.CopyDataMessage{}
 					msg.Decode(body)
 					if n, err := ww.Write(msg.Data); err != nil {
 						_ = ycl.ReplyError(err, "failed to compelete request")
@@ -104,8 +105,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 						_ = ycl.Conn.Close()
 						return
 					}
-				case MessageTypeCommandComplete:
-					msg := CommandCompleteMessage{}
+				case message.MessageTypeCommandComplete:
+					msg := message.CommandCompleteMessage{}
 					msg.Decode(body)
 
 					if err := ww.Close(); err != nil {
@@ -131,7 +132,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			return ycl.Conn.Close()
 		}
 
-		_, err = ycl.Conn.Write(NewReadyForQueryMessage().Encode())
+		_, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode())
 
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")

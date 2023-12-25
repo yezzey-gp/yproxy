@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/client"
+	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -42,7 +43,7 @@ var catCmd = &cobra.Command{
 		}
 
 		defer con.Close()
-		msg := proc.NewCatMessage(args[0], decrypt).Encode()
+		msg := message.NewCatMessage(args[0], decrypt).Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -81,7 +82,7 @@ var putCmd = &cobra.Command{
 		r := proc.NewProtoReader(ycl)
 
 		defer con.Close()
-		msg := proc.NewPutMessage(args[0], encrypt).Encode()
+		msg := message.NewPutMessage(args[0], encrypt).Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -94,7 +95,7 @@ var putCmd = &cobra.Command{
 		for {
 			n, err := os.Stdin.Read(chunk)
 			if n > 0 {
-				msg := proc.NewCopyDataMessage()
+				msg := message.NewCopyDataMessage()
 				msg.Sz = uint64(n)
 				msg.Data = make([]byte, msg.Sz)
 				copy(msg.Data, chunk[:n])
@@ -119,7 +120,7 @@ var putCmd = &cobra.Command{
 
 		ylogger.Zero.Debug().Msg("send command complete msg")
 
-		msg = proc.NewCommandCompleteMessage().Encode()
+		msg = message.NewCommandCompleteMessage().Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -130,7 +131,7 @@ var putCmd = &cobra.Command{
 			return err
 		}
 
-		if tp == proc.MessageTypeReadyForQuery {
+		if tp == message.MessageTypeReadyForQuery {
 			// ok
 
 			ylogger.Zero.Debug().Msg("got rfq")

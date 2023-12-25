@@ -1,4 +1,4 @@
-package proc
+package message
 
 type ProtoMessage interface {
 	Decode([]byte)
@@ -15,6 +15,7 @@ const (
 	MessageTypeCommandComplete = MessageType(44)
 	MessageTypeReadyForQuery   = MessageType(45)
 	MessageTypeCopyData        = MessageType(46)
+	MessageTypeDelete          = MessageType(47)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)
@@ -35,6 +36,8 @@ func (m MessageType) String() string {
 		return "READY FOR QUERY"
 	case MessageTypeCopyData:
 		return "COPY DATA"
+	case MessageTypeDelete:
+		return "DELETE"
 	}
 	return "UNKNOWN"
 }
