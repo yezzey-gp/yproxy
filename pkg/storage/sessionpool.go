@@ -3,12 +3,12 @@ package storage
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/defaults"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
+	"github.com/yezzey-gp/aws-sdk-go/aws"
+	"github.com/yezzey-gp/aws-sdk-go/aws/credentials"
+	"github.com/yezzey-gp/aws-sdk-go/aws/defaults"
+	"github.com/yezzey-gp/aws-sdk-go/aws/session"
+	"github.com/yezzey-gp/aws-sdk-go/service/s3"
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 
