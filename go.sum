@@ -37,8 +37,8 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/yezzey-gp/aws-sdk-go v0.0.1 h1:B6j8PT/B2jjj4KAGAgZyWLDNejc9TXb0Ujqmyw5ZKfE=
-github.com/yezzey-gp/aws-sdk-go v0.0.1/go.mod h1:+gUq+WgyFOP6Eto+AcgJDDeM6tnXmOT4RJmfpuafV3Y=
+github.com/yezzey-gp/aws-sdk-go v0.1.0 h1:as6ANEva14gKdhWPjZy6qaGR+/WhP0HN4UMzDHLDqmU=
+github.com/yezzey-gp/aws-sdk-go v0.1.0/go.mod h1:+gUq+WgyFOP6Eto+AcgJDDeM6tnXmOT4RJmfpuafV3Y=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=

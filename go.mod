@@ -9,7 +9,7 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
-	github.com/yezzey-gp/aws-sdk-go v0.0.1
+	github.com/yezzey-gp/aws-sdk-go v0.1.0
 	golang.org/x/sync v0.5.0
 	gopkg.in/yaml.v2 v2.4.0
 )
