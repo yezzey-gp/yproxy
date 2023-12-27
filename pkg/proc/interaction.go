@@ -140,6 +140,37 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			return ycl.Conn.Close()
 		}
 
+	case message.MessageTypeList:
+		msg := message.ListMessage{}
+		msg.Decode(body)
+
+		objectMetas, err := s.ListPath(msg.Name)
+		if err != nil {
+			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
+
+			_ = ycl.Conn.Close()
+		}
+
+		const chunkSize = 10_000
+
+		for i := 0; i < len(objectMetas); i += chunkSize {
+			_, err = ycl.Conn.Write(message.NewObjectMetaMessage(objectMetas[i : i+chunkSize]).Encode())
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to upload")
+
+				return ycl.Conn.Close()
+			}
+
+		}
+
+		_, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode())
+
+		if err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+
+			return ycl.Conn.Close()
+		}
+
 	default:
 
 		_ = ycl.ReplyError(nil, "wrong request type")
