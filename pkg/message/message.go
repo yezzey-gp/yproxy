@@ -16,6 +16,8 @@ const (
 	MessageTypeReadyForQuery   = MessageType(45)
 	MessageTypeCopyData        = MessageType(46)
 	MessageTypeDelete          = MessageType(47)
+	MessageTypeList            = MessageType(48)
+	MessageTypeObjectMeta      = MessageType(49)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)
@@ -38,6 +40,10 @@ func (m MessageType) String() string {
 		return "COPY DATA"
 	case MessageTypeDelete:
 		return "DELETE"
+	case MessageTypeList:
+		return "LIST"
+	case MessageTypeObjectMeta:
+		return "OBJECT META"
 	}
 	return "UNKNOWN"
 }
