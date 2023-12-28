@@ -196,6 +196,8 @@ var listCmd = &cobra.Command{
 			case message.MessageTypeReadyForQuery:
 				done = true
 				break
+			default:
+				return fmt.Errorf("Incorrect message type: %s", tp.String())
 			}
 		}
 
