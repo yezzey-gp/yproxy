@@ -6,14 +6,14 @@ import (
 )
 
 type ListMessage struct {
-	Name string
+	Prefix string
 }
 
 var _ ProtoMessage = &ListMessage{}
 
 func NewListMessage(name string) *ListMessage {
 	return &ListMessage{
-		Name: name,
+		Prefix: name,
 	}
 }
 
@@ -25,7 +25,7 @@ func (c *ListMessage) Encode() []byte {
 		0,
 	}
 
-	bt = append(bt, []byte(c.Name)...)
+	bt = append(bt, []byte(c.Prefix)...)
 	bt = append(bt, 0)
 	ln := len(bt) + 8
 
@@ -35,7 +35,7 @@ func (c *ListMessage) Encode() []byte {
 }
 
 func (c *ListMessage) Decode(body []byte) {
-	c.Name = c.GetListName(body[4:])
+	c.Prefix = c.GetListName(body[4:])
 }
 
 func (c *ListMessage) GetListName(b []byte) string {

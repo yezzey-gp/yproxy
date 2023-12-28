@@ -144,7 +144,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		msg := message.ListMessage{}
 		msg.Decode(body)
 
-		objectMetas, err := s.ListPath(msg.Name)
+		objectMetas, err := s.ListPath(msg.Prefix)
 		if err != nil {
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 
