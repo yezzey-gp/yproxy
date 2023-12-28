@@ -14,6 +14,7 @@ import (
 
 type StorageReader interface {
 	CatFileFromStorage(name string) (io.Reader, error)
+	ListPath(name string) ([]*S3ObjectMeta, error)
 }
 
 type StorageWriter interface {
@@ -86,4 +87,35 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader) error {
 	)
 
 	return err
+}
+
+type S3ObjectMeta struct {
+	Path string
+	Size int64
+}
+
+func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
+	sess, err := s.pool.GetSession(context.TODO())
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
+		return nil, err
+	}
+
+	prefix = path.Join(s.cnf.StoragePrefix, prefix)
+	input := &s3.ListObjectsInput{
+		Bucket: &s.cnf.StorageBucket,
+		Prefix: aws.String(prefix),
+	}
+
+	out, err := sess.ListObjects(input)
+
+	metas := make([]*S3ObjectMeta, 0)
+	for _, obj := range out.Contents {
+		metas = append(metas, &S3ObjectMeta{
+			Path: *obj.Key,
+			Size: *obj.Size,
+		})
+	}
+
+	return metas, nil
 }

@@ -100,3 +100,27 @@ func TestCopyDataMsg(t *testing.T) {
 		assert.Equal(msg.Sz, msg2.Sz)
 	}
 }
+
+func TestListMsg(t *testing.T) {
+	assert := assert.New(t)
+
+	type tcase struct {
+		prefix string
+	}
+
+	for _, tt := range []tcase{
+		{
+			"nam1",
+		},
+	} {
+
+		msg := message.NewListMessage(tt.prefix)
+		body := msg.Encode()
+
+		msg2 := message.ListMessage{}
+
+		msg2.Decode(body[8:])
+
+		assert.Equal(msg.Prefix, msg2.Prefix)
+	}
+}

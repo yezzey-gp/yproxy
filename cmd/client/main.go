@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 
+	"github.com/yezzey-gp/yproxy/pkg/storage"
+
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/client"
@@ -143,6 +145,70 @@ var putCmd = &cobra.Command{
 	},
 }
 
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		err := config.LoadInstanceConfig(cfgPath)
+		if err != nil {
+			return err
+		}
+
+		instanceCnf := config.InstanceConfig()
+
+		con, err := net.Dial("unix", instanceCnf.SocketPath)
+
+		if err != nil {
+			return err
+		}
+
+		defer con.Close()
+		msg := message.NewListMessage(args[0]).Encode()
+		_, err = con.Write(msg)
+		if err != nil {
+			return err
+		}
+
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
+
+		ycl := client.NewYClient(con)
+		r := proc.NewProtoReader(ycl)
+
+		done := false
+		res := make([]*storage.S3ObjectMeta, 0)
+		for {
+			if done {
+				break
+			}
+			tp, body, err := r.ReadPacket()
+			if err != nil {
+				return err
+			}
+
+			switch tp {
+			case message.MessageTypeObjectMeta:
+				meta := message.ObjectMetaMessage{}
+				meta.Decode(body)
+
+				res = append(res, meta.Content...)
+				break
+			case message.MessageTypeReadyForQuery:
+				done = true
+				break
+			default:
+				return fmt.Errorf("Incorrect message type: %s", tp.String())
+			}
+		}
+
+		for _, meta := range res {
+			fmt.Printf("Object: {Name: \"%s\", size: %d}\n", meta.Path, meta.Size)
+		}
+
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "/etc/yproxy/yproxy.yaml", "path to yproxy config file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "", "log level")
@@ -152,6 +218,8 @@ func init() {
 
 	putCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "e", false, "encrypt external object before put")
 	rootCmd.AddCommand(putCmd)
+
+	rootCmd.AddCommand(listCmd)
 }
 
 func main() {
