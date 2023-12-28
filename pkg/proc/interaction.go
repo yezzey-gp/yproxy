@@ -154,7 +154,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		const chunkSize = 10_000
 
 		for i := 0; i < len(objectMetas); i += chunkSize {
-			_, err = ycl.Conn.Write(message.NewObjectMetaMessage(objectMetas[i : i+chunkSize]).Encode())
+			_, err = ycl.Conn.Write(message.NewObjectMetaMessage(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to upload")
 

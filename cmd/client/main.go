@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"io"
 	"net"
 	"os"
+
+	"github.com/yezzey-gp/yproxy/pkg/storage"
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
@@ -199,7 +200,7 @@ var listCmd = &cobra.Command{
 		}
 
 		for _, meta := range res {
-			fmt.Printf("%#v\n", meta)
+			fmt.Printf("Object: {Name: \"%s\", size: %d}\n", meta.Path, meta.Size)
 		}
 
 		return nil

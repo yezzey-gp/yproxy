@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"encoding/binary"
+
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 )
 
@@ -42,12 +43,13 @@ func (c *ObjectMetaMessage) Encode() []byte {
 }
 
 func (c *ObjectMetaMessage) Decode(body []byte) {
-	objMetas := make([]*storage.S3ObjectMeta, 0)
+	body = body[4:]
+	c.Content = make([]*storage.S3ObjectMeta, 0)
 	for len(body) > 0 {
 		name, index := c.GetString(body)
 		size := int64(binary.BigEndian.Uint64(body[index : index+8]))
 
-		objMetas = append(objMetas, &storage.S3ObjectMeta{
+		c.Content = append(c.Content, &storage.S3ObjectMeta{
 			Path: name,
 			Size: size,
 		})
