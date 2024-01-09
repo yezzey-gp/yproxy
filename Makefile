@@ -15,6 +15,7 @@ build:
 unittest:
 	go test -race ./pkg/message/...
 
+version = $(shell git describe --tags --abbrev=0)
 package:
 	sed -i 's/YPROXY_VERSION/${version}/g' debian/changelog
 	dpkg-buildpackage -us -uc
