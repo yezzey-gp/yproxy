@@ -18,8 +18,7 @@ func NewYClient(c net.Conn) *YClient {
 }
 
 func (y *YClient) ReplyError(err error, msg string) error {
-
-	ylogger.Zero.Debug().Err(err).Msg(msg)
+	ylogger.Zero.Error().Err(err).Msg(msg)
 
 	_, _ = y.Conn.Write([]byte(
 		fmt.Sprintf("%s: %v", msg, err),
