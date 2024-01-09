@@ -29,6 +29,6 @@ jobs:
       - name: build package
         run: |
           make package
-          gh release upload ${TAG} $(echo ../* | tr ' ' '\n' | grep -v '^../spqr$' | tr '\n' ' ')
+          gh release upload ${TAG} $(echo ../* | tr ' ' '\n' | grep -v '^../yproxy$' | tr '\n' ' ')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
