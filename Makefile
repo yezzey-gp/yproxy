@@ -15,3 +15,6 @@ build:
 unittest:
 	go test -race ./pkg/message/...
 
+package:
+	sed -i 's/YPROXY_VERSION/${version}/g' debian/changelog
+	dpkg-buildpackage -us -uc
