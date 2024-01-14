@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path"
 
@@ -19,16 +20,21 @@ type StorageReader interface {
 
 type StorageWriter interface {
 	PutFileToDest(name string, r io.Reader) error
+	PatchFile(name string, r io.ReadSeeker, startOffste int64) error
+}
+
+type StorageLister interface {
+	ListPath(prefix string) ([]*S3ObjectMeta, error)
 }
 
 type StorageInteractor interface {
 	StorageReader
 	StorageWriter
+	StorageLister
 }
 
 type S3StorageInteractor struct {
-	StorageReader
-	StorageWriter
+	StorageInteractor
 
 	pool SessionPool
 	cnf  *config.Storage
@@ -78,13 +84,36 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader) error {
 
 	_, err = up.Upload(
 		&s3manager.UploadInput{
-
 			Bucket:       aws.String(s.cnf.StorageBucket),
 			Key:          aws.String(objectPath),
 			Body:         r,
 			StorageClass: aws.String("STANDARD"),
 		},
 	)
+
+	return err
+}
+
+func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffste int64) error {
+	sess, err := s.pool.GetSession(context.TODO())
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
+		return nil
+	}
+
+	objectPath := path.Join(s.cnf.StoragePrefix, name)
+
+	input := &s3.PatchObjectInput{
+		Bucket:       &s.cnf.StorageBucket,
+		Key:          aws.String(objectPath),
+		Body:         r,
+		ContentRange: aws.String(fmt.Sprintf("bytes %d-18446744073709551615", startOffste)),
+	}
+
+	_, err = sess.PatchObject(input)
+
+	ylogger.Zero.Debug().Str("key", objectPath).Str("bucket",
+		s.cnf.StorageBucket).Msg("modifying file in external storage")
 
 	return err
 }
