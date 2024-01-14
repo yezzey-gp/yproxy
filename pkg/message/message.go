@@ -18,6 +18,7 @@ const (
 	MessageTypeDelete          = MessageType(47)
 	MessageTypeList            = MessageType(48)
 	MessageTypeObjectMeta      = MessageType(49)
+	MessageTypePatch           = MessageType(50)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)

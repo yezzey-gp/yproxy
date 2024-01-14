@@ -57,12 +57,44 @@ func TestPutMsg(t *testing.T) {
 		msg := message.NewPutMessage(tt.name, tt.encrypt)
 		body := msg.Encode()
 
-		msg2 := message.CatMessage{}
+		msg2 := message.PutMessage{}
 
 		msg2.Decode(body[8:])
 
 		assert.Equal(msg.Name, msg2.Name)
-		assert.Equal(msg.Encrypt, msg2.Decrypt)
+		assert.Equal(msg.Encrypt, msg2.Encrypt)
+	}
+}
+
+func TestPatchMsg(t *testing.T) {
+	assert := assert.New(t)
+
+	type tcase struct {
+		name    string
+		encrypt bool
+		off     uint64
+		err     error
+	}
+
+	for _, tt := range []tcase{
+		{
+			"nam1",
+			true,
+			1235,
+			nil,
+		},
+	} {
+
+		msg := message.NewPatchMessage(tt.name, tt.off, tt.encrypt)
+		body := msg.Encode()
+
+		msg2 := message.PatchMessage{}
+
+		msg2.Decode(body[8:])
+
+		assert.Equal(msg.Name, msg2.Name)
+		assert.Equal(msg.Encrypt, msg2.Encrypt)
+		assert.Equal(msg.Offset, msg2.Offset)
 	}
 }
 
