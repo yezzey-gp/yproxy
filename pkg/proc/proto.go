@@ -21,7 +21,8 @@ func NewProtoReader(ycl *client.YClient) *ProtoReader {
 	}
 }
 
-const maxMsgLen = 1 << 20
+// 1mb of data + header
+const maxMsgLen = 1<<20 | 1<<10
 
 func (r *ProtoReader) ReadPacket() (message.MessageType, []byte, error) {
 	msgLenBuf := make([]byte, 8)
