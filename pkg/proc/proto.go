@@ -33,7 +33,7 @@ func (r *ProtoReader) ReadPacket() (message.MessageType, []byte, error) {
 	dataLen := binary.BigEndian.Uint64(msgLenBuf)
 
 	if dataLen > maxMsgLen {
-		return 0, nil, fmt.Errorf("message too big")
+		return 0, nil, fmt.Errorf("message too big %d", dataLen)
 	}
 
 	if dataLen <= 8 {
