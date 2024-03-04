@@ -66,7 +66,11 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		&instanceCnf.StorageCnf,
 	)
 
-	cr := crypt.NewCrypto(&instanceCnf.CryptoCnf)
+	cr, err := crypt.NewCrypto(&instanceCnf.CryptoCnf)
+
+	if err != nil {
+		return err
+	}
 
 	notifier, err := sdnotifier.NewNotifier(instanceCnf.GetSystemdSocketPath(), instanceCnf.SystemdNotificationsDebug)
 	if err != nil {
