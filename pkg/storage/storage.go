@@ -14,7 +14,7 @@ import (
 )
 
 type StorageReader interface {
-	CatFileFromStorage(name string) (io.Reader, error)
+	CatFileFromStorage(name string) (io.ReadCloser, error)
 	ListPath(name string) ([]*S3ObjectMeta, error)
 }
 
@@ -47,7 +47,7 @@ func NewStorage(cnf *config.Storage) StorageInteractor {
 	}
 }
 
-func (s *S3StorageInteractor) CatFileFromStorage(name string) (io.Reader, error) {
+func (s *S3StorageInteractor) CatFileFromStorage(name string) (io.ReadCloser, error) {
 	// XXX: fix this
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {

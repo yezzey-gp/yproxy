@@ -13,7 +13,7 @@ import (
 )
 
 type Crypter interface {
-	Decrypt(reader io.Reader) (io.Reader, error)
+	Decrypt(reader io.ReadCloser) (io.Reader, error)
 	Encrypt(writer io.WriteCloser) (io.WriteCloser, error)
 }
 
@@ -74,7 +74,7 @@ func (g *GPGCrypter) loadSecret() error {
 	return nil
 }
 
-func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
+func (g *GPGCrypter) Decrypt(reader io.ReadCloser) (io.Reader, error) {
 
 	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
 
