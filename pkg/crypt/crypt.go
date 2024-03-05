@@ -23,10 +23,17 @@ type GPGCrypter struct {
 	cnf *config.Crypto
 }
 
-func NewCrypto(cnf *config.Crypto) Crypter {
-	return &GPGCrypter{
+func NewCrypto(cnf *config.Crypto) (Crypter, error) {
+	cr := &GPGCrypter{
 		cnf: cnf,
 	}
+
+	err := cr.loadSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	return cr, nil
 }
 
 func (g *GPGCrypter) readKey(path string) (io.Reader, error) {
@@ -68,10 +75,7 @@ func (g *GPGCrypter) loadSecret() error {
 }
 
 func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
-	err := g.loadSecret()
-	if err != nil {
-		return nil, err
-	}
+
 	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
 
 	md, err := openpgp.ReadMessage(reader, g.EntityList, nil, nil)
@@ -84,10 +88,6 @@ func (g *GPGCrypter) Decrypt(reader io.Reader) (io.Reader, error) {
 }
 
 func (g *GPGCrypter) Encrypt(writer io.WriteCloser) (io.WriteCloser, error) {
-	err := g.loadSecret()
-	if err != nil {
-		return nil, err
-	}
 	ylogger.Zero.Debug().Str("gpg path", g.cnf.GPGKeyPath).Msg("loaded gpg key")
 
 	encryptedWriter, err := openpgp.Encrypt(writer, g.EntityList, nil, nil, nil)
