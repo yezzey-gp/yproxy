@@ -54,7 +54,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			}
 		}
 		_, err = io.Copy(ycl.Conn, contentReader)
-		_ = ycl.ReplyError(err, "failed to compelete request")
+		if err != nil {
+			_ = ycl.ReplyError(err, "failed to compelete request")
+		}
 
 	case message.MessageTypePut:
 
