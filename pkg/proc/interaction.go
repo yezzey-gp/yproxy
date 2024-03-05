@@ -53,7 +53,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				return err
 			}
 		}
-		defer r.Close()
 		_, err = io.Copy(ycl.Conn, contentReader)
 		_ = ycl.ReplyError(err, "failed to compelete request")
 
