@@ -13,12 +13,15 @@ import (
 )
 
 func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
+
+	defer func() {
+		_ = ycl.Conn.Close()
+	}()
+
 	pr := NewProtoReader(ycl)
 	tp, body, err := pr.ReadPacket()
 	if err != nil {
-
 		_ = ycl.ReplyError(err, "failed to compelete request")
-
 		return err
 	}
 
@@ -36,18 +39,22 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 			return err
 		}
+
+		var contentReader io.Reader
+		contentReader = r
+		defer r.Close()
+
 		if msg.Decrypt {
 			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object ")
-			r, err = cr.Decrypt(r)
+			contentReader, err = cr.Decrypt(r)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to compelete request")
 
 				return err
 			}
 		}
-		io.Copy(ycl.Conn, r)
-
-		_ = ycl.Conn.Close()
+		_, err = io.Copy(ycl.Conn, contentReader)
+		_ = ycl.ReplyError(err, "failed to compelete request")
 
 	case message.MessageTypePut:
 
@@ -82,8 +89,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				tp, body, err := pr.ReadPacket()
 				if err != nil {
 					_ = ycl.ReplyError(err, "failed to compelete request")
-
-					_ = ycl.Conn.Close()
 					return
 				}
 
@@ -96,13 +101,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					if n, err := ww.Write(msg.Data); err != nil {
 						_ = ycl.ReplyError(err, "failed to compelete request")
 
-						_ = ycl.Conn.Close()
 						return
 					} else if n != int(msg.Sz) {
 
 						_ = ycl.ReplyError(fmt.Errorf("unfull write"), "failed to compelete request")
 
-						_ = ycl.Conn.Close()
 						return
 					}
 				case message.MessageTypeCommandComplete:
@@ -111,8 +114,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 					if err := ww.Close(); err != nil {
 						_ = ycl.ReplyError(err, "failed to compelete request")
-
-						_ = ycl.Conn.Close()
 						return
 					}
 
@@ -129,7 +130,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
 
-			return ycl.Conn.Close()
+			return nil
 		}
 
 		_, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode())
@@ -137,7 +138,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
 
-			return ycl.Conn.Close()
+			return nil
 		}
 
 	case message.MessageTypeList:
@@ -148,7 +149,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		if err != nil {
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 
-			_ = ycl.Conn.Close()
+			return nil
 		}
 
 		const chunkSize = 1000
@@ -158,7 +159,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to upload")
 
-				return ycl.Conn.Close()
+				return nil
 			}
 
 		}
@@ -168,14 +169,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
 
-			return ycl.Conn.Close()
+			return nil
 		}
 
 	default:
-
 		_ = ycl.ReplyError(nil, "wrong request type")
 
-		return ycl.Conn.Close()
+		return nil
 	}
 
 	return nil
