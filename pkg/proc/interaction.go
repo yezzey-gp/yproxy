@@ -21,7 +21,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 	pr := NewProtoReader(ycl)
 	tp, body, err := pr.ReadPacket()
 	if err != nil {
-		_ = ycl.ReplyError(err, "failed to compelete request")
+		_ = ycl.ReplyError(err, "failed to read request packet")
 		return err
 	}
 
@@ -35,7 +35,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("cat object")
 		r, err := s.CatFileFromStorage(msg.Name)
 		if err != nil {
-			_ = ycl.ReplyError(err, "failed to compelete request")
+			_ = ycl.ReplyError(err, "failed to read from external storage")
 
 			return err
 		}
@@ -48,7 +48,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object ")
 			contentReader, err = cr.Decrypt(r)
 			if err != nil {
-				_ = ycl.ReplyError(err, "failed to compelete request")
+				_ = ycl.ReplyError(err, "failed to decrypt object")
 
 				return err
 			}
@@ -90,7 +90,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			for {
 				tp, body, err := pr.ReadPacket()
 				if err != nil {
-					_ = ycl.ReplyError(err, "failed to compelete request")
+					_ = ycl.ReplyError(err, "failed to read chunk of data")
 					return
 				}
 
@@ -101,7 +101,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					msg := message.CopyDataMessage{}
 					msg.Decode(body)
 					if n, err := ww.Write(msg.Data); err != nil {
-						_ = ycl.ReplyError(err, "failed to compelete request")
+						_ = ycl.ReplyError(err, "failed to write copy data")
 
 						return
 					} else if n != int(msg.Sz) {
@@ -115,7 +115,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					msg.Decode(body)
 
 					if err := ww.Close(); err != nil {
-						_ = ycl.ReplyError(err, "failed to compelete request")
+						_ = ycl.ReplyError(err, "failed to close connection")
 						return
 					}
 
