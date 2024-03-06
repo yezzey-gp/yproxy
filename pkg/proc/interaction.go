@@ -12,6 +12,32 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
+type YproxyLoggingReader struct {
+	underlying io.ReadCloser
+}
+
+// Close implements io.ReadCloser.
+func (y *YproxyLoggingReader) Close() error {
+	return y.underlying.Close()
+}
+
+// Read implements io.ReadCloser.
+func (y *YproxyLoggingReader) Read(p []byte) (int, error) {
+	n, err := y.underlying.Read(p)
+	if err != nil {
+		ylogger.Zero.Error().Err(err).Msg("encounderv read error")
+	}
+	return n, err
+}
+
+func newLoggingReader(r io.ReadCloser) io.ReadCloser {
+	return &YproxyLoggingReader{
+		underlying: r,
+	}
+}
+
+var _ io.ReadCloser = &YproxyLoggingReader{}
+
 func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
 
 	defer func() {
@@ -39,6 +65,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 			return err
 		}
+
+		r = newLoggingReader(r)
 
 		var contentReader io.Reader
 		contentReader = r
