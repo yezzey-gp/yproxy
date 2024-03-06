@@ -26,7 +26,6 @@ type S3SessionPool struct {
 }
 
 func NewSessionPool(cnf *config.Storage) SessionPool {
-
 	return &S3SessionPool{
 		cnf: cnf,
 		sem: semaphore.NewWeighted(cnf.StorageConcurrency),
