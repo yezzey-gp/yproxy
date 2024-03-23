@@ -18,7 +18,7 @@ type YproxyRetryReader struct {
 	bytesWrite      int64
 	retryCnt        int64
 	retryLimit      int64
-	reallocReaderFn func(offfsetStart int64) io.ReadCloser
+	reacquireReaderFn func(offsetStart int64) (io.ReadCloser, error)
 }
 
 // Close implements io.ReadCloser.
@@ -33,20 +33,53 @@ func (y *YproxyRetryReader) Close() error {
 // Read implements io.ReadCloser.
 func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 
-	for {
+	needReacquire := true
+
+	for retry := 0; retry < y.retryLimit; retry ++ {
+
+		if needReacquire {
+			r, err := y.reacquireReaderFn(y.bytesWrite)
+
+			if err != nil {
+				// log error and continue. 
+				// Try to mitigate overload problems with random sleep
+				ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("failed to reacquire external storage connection, wait and retry")
+
+				time.Sleep(time.Second)
+				continue
+			}
+			//
+			y.underlying = r
+
+			needReacquire = false
+		}
+
 		n, err := y.underlying.Read(p)
 		if err != nil || n < 0 {
-			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(y.retryCnt)).Msg("encounter read error")
+			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("encounter read error")
+
+			// what if close failed?
+			_ = y.underlying.Close()
+
+			// try to reacquire connection to external storage and continue read
+			// from previously reached point
+			continue
 		} else {
 			y.bytesWrite += int64(n)
 		}
 	}
-	return -1, fmt.Errorf("f")
+	return -1, fmt.Errorf("failed to unpload within retries")
 }
 
-func newLoggingReader(r io.ReadCloser) io.ReadCloser {
+const (
+	defaultRetryLimit = 100
+)
+
+func newYRetryReader(reacquireReaderFn func(offsetStart int64) (io.ReadCloser, error)) io.ReadCloser {
 	return &YproxyRetryReader{
-		underlying: r,
+		reacquireReaderFn: reacquireReaderFn,
+		retryLimit: defaultRetryLimit,
+		bytesWrite: 0,
 	}
 }
 
@@ -72,23 +105,27 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		// omit first byte
 		msg := message.CatMessage{}
 		msg.Decode(body)
-		ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("cat object")
-		r, err := s.CatFileFromStorage(msg.Name)
-		if err != nil {
-			_ = ycl.ReplyError(err, "failed to read from external storage")
 
-			return err
-		}
+		yr := newYRetryReader(
+			func(offsetStart int64) (io.ReadCloser, error) {
+				ylogger.Zero.Debug().Str("object-path", msg.Name).Int("offset", offsetStart).Msg("cat object with offset")
+				r, err := s.CatFileFromStorage(msg.Name, offsetStart)
+				if err != nil {
+					_ = ycl.ReplyError(err, "failed to read from external storage")
+					return nil, err
+				}
 
-		r = newLoggingReader(r)
+				return r, nil
+			}
+		)
 
 		var contentReader io.Reader
-		contentReader = r
-		defer r.Close()
+		contentReader = yr
+		defer yr.Close()
 
 		if msg.Decrypt {
-			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object ")
-			contentReader, err = cr.Decrypt(r)
+			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
+			contentReader, err = cr.Decrypt(yr)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to decrypt object")
 
