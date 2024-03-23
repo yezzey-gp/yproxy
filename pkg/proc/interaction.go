@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
@@ -15,9 +16,9 @@ import (
 type YproxyRetryReader struct {
 	underlying io.ReadCloser
 
-	bytesWrite      int64
-	retryCnt        int64
-	retryLimit      int64
+	bytesWrite        int64
+	retryCnt          int64
+	retryLimit        int
 	reacquireReaderFn func(offsetStart int64) (io.ReadCloser, error)
 }
 
@@ -35,13 +36,13 @@ func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 
 	needReacquire := true
 
-	for retry := 0; retry < y.retryLimit; retry ++ {
+	for retry := 0; retry < y.retryLimit; retry++ {
 
 		if needReacquire {
 			r, err := y.reacquireReaderFn(y.bytesWrite)
 
 			if err != nil {
-				// log error and continue. 
+				// log error and continue.
 				// Try to mitigate overload problems with random sleep
 				ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("failed to reacquire external storage connection, wait and retry")
 
@@ -78,8 +79,8 @@ const (
 func newYRetryReader(reacquireReaderFn func(offsetStart int64) (io.ReadCloser, error)) io.ReadCloser {
 	return &YproxyRetryReader{
 		reacquireReaderFn: reacquireReaderFn,
-		retryLimit: defaultRetryLimit,
-		bytesWrite: 0,
+		retryLimit:        defaultRetryLimit,
+		bytesWrite:        0,
 	}
 }
 
@@ -108,7 +109,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 		yr := newYRetryReader(
 			func(offsetStart int64) (io.ReadCloser, error) {
-				ylogger.Zero.Debug().Str("object-path", msg.Name).Int("offset", offsetStart).Msg("cat object with offset")
+				ylogger.Zero.Debug().Str("object-path", msg.Name).Int64("offset", offsetStart).Msg("cat object with offset")
 				r, err := s.CatFileFromStorage(msg.Name, offsetStart)
 				if err != nil {
 					_ = ycl.ReplyError(err, "failed to read from external storage")
@@ -116,7 +117,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				}
 
 				return r, nil
-			}
+			},
 		)
 
 		var contentReader io.Reader

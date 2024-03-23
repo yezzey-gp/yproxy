@@ -60,7 +60,7 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.
 	input := &s3.GetObjectInput{
 		Bucket: &s.cnf.StorageBucket,
 		Key:    aws.String(objectPath),
-		Range: fmt.Sprintf("bytes=%d-", off)
+		Range:  aws.String(fmt.Sprintf("bytes=%d-", offset)),
 	}
 
 	ylogger.Zero.Debug().Str("key", objectPath).Str("bucket",

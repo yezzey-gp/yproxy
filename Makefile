@@ -1,7 +1,7 @@
 
 GIT_REVISION=`git rev-parse --short HEAD`
-SPQR_VERSION=`git describe --tags --abbrev=0`
-LDFLAGS=-ldflags "-X github.com/yezzey-gp/yproxy/pkg.GitRevision=${GIT_REVISION} -X github.com/yezzey-gp/yproxy/pkg.SpqrVersion=${SPQR_VERSION}"
+YPROXY_VERSION=`git describe --tags --abbrev=0`
+LDFLAGS=-ldflags "-X github.com/yezzey-gp/yproxy/pkg.GitRevision=${GIT_REVISION} -X github.com/yezzey-gp/yproxy/pkg.YproxyVersion=${YPROXY_VERSION}"
 
 ####################### BUILD #######################
 
