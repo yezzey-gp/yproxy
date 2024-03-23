@@ -12,32 +12,6 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-type YproxyLoggingReader struct {
-	underlying io.ReadCloser
-}
-
-// Close implements io.ReadCloser.
-func (y *YproxyLoggingReader) Close() error {
-	return y.underlying.Close()
-}
-
-// Read implements io.ReadCloser.
-func (y *YproxyLoggingReader) Read(p []byte) (int, error) {
-	n, err := y.underlying.Read(p)
-	if err != nil {
-		ylogger.Zero.Error().Err(err).Msg("encounderv read error")
-	}
-	return n, err
-}
-
-func newLoggingReader(r io.ReadCloser) io.ReadCloser {
-	return &YproxyLoggingReader{
-		underlying: r,
-	}
-}
-
-var _ io.ReadCloser = &YproxyLoggingReader{}
-
 func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
 
 	defer func() {
@@ -58,23 +32,16 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		// omit first byte
 		msg := message.CatMessage{}
 		msg.Decode(body)
-		ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("cat object")
-		r, err := s.CatFileFromStorage(msg.Name)
-		if err != nil {
-			_ = ycl.ReplyError(err, "failed to read from external storage")
 
-			return err
-		}
-
-		r = newLoggingReader(r)
+		yr := NewYRetryReader(NewRestartReader(s, msg.Name))
 
 		var contentReader io.Reader
-		contentReader = r
-		defer r.Close()
+		contentReader = yr
+		defer yr.Close()
 
 		if msg.Decrypt {
-			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object ")
-			contentReader, err = cr.Decrypt(r)
+			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
+			contentReader, err = cr.Decrypt(yr)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to decrypt object")
 

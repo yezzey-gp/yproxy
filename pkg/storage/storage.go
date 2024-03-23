@@ -14,7 +14,7 @@ import (
 )
 
 type StorageReader interface {
-	CatFileFromStorage(name string) (io.ReadCloser, error)
+	CatFileFromStorage(name string, offset int64) (io.ReadCloser, error)
 	ListPath(name string) ([]*S3ObjectMeta, error)
 }
 
@@ -37,7 +37,8 @@ type S3StorageInteractor struct {
 	StorageInteractor
 
 	pool SessionPool
-	cnf  *config.Storage
+
+	cnf *config.Storage
 }
 
 func NewStorage(cnf *config.Storage) StorageInteractor {
@@ -47,7 +48,7 @@ func NewStorage(cnf *config.Storage) StorageInteractor {
 	}
 }
 
-func (s *S3StorageInteractor) CatFileFromStorage(name string) (io.ReadCloser, error) {
+func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.ReadCloser, error) {
 	// XXX: fix this
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
@@ -59,9 +60,10 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string) (io.ReadCloser, er
 	input := &s3.GetObjectInput{
 		Bucket: &s.cnf.StorageBucket,
 		Key:    aws.String(objectPath),
+		Range:  aws.String(fmt.Sprintf("bytes=%d-", offset)),
 	}
 
-	ylogger.Zero.Debug().Str("key", objectPath).Str("bucket",
+	ylogger.Zero.Debug().Str("key", objectPath).Int64("offset", offset).Str("bucket",
 		s.cnf.StorageBucket).Msg("requesting external storage")
 
 	object, err := sess.GetObject(input)
