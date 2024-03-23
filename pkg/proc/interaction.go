@@ -12,31 +12,45 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-type YproxyLoggingReader struct {
+type YproxyRetryReader struct {
 	underlying io.ReadCloser
+
+	bytesWrite      int64
+	retryCnt        int64
+	retryLimit      int64
+	reallocReaderFn func(offfsetStart int64) io.ReadCloser
 }
 
 // Close implements io.ReadCloser.
-func (y *YproxyLoggingReader) Close() error {
-	return y.underlying.Close()
+func (y *YproxyRetryReader) Close() error {
+	err := y.underlying.Close()
+	if err != nil {
+		ylogger.Zero.Error().Err(err).Msg("encounter close error")
+	}
+	return err
 }
 
 // Read implements io.ReadCloser.
-func (y *YproxyLoggingReader) Read(p []byte) (int, error) {
-	n, err := y.underlying.Read(p)
-	if err != nil {
-		ylogger.Zero.Error().Err(err).Msg("encounderv read error")
+func (y *YproxyRetryReader) Read(p []byte) (int, error) {
+
+	for {
+		n, err := y.underlying.Read(p)
+		if err != nil || n < 0 {
+			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(y.retryCnt)).Msg("encounter read error")
+		} else {
+			y.bytesWrite += int64(n)
+		}
 	}
-	return n, err
+	return -1, fmt.Errorf("f")
 }
 
 func newLoggingReader(r io.ReadCloser) io.ReadCloser {
-	return &YproxyLoggingReader{
+	return &YproxyRetryReader{
 		underlying: r,
 	}
 }
 
-var _ io.ReadCloser = &YproxyLoggingReader{}
+var _ io.ReadCloser = &YproxyRetryReader{}
 
 func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
 

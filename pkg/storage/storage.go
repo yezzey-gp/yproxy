@@ -37,7 +37,8 @@ type S3StorageInteractor struct {
 	StorageInteractor
 
 	pool SessionPool
-	cnf  *config.Storage
+
+	cnf *config.Storage
 }
 
 func NewStorage(cnf *config.Storage) StorageInteractor {
