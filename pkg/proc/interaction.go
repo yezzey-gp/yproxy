@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
@@ -12,87 +11,6 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
-
-type YproxyRetryReader struct {
-	underlying io.ReadCloser
-
-	bytesWrite        int64
-	retryCnt          int64
-	retryLimit        int
-	needReacquire     bool
-	reacquireReaderFn func(offsetStart int64) (io.ReadCloser, error)
-}
-
-// Close implements io.ReadCloser.
-func (y *YproxyRetryReader) Close() error {
-	err := y.underlying.Close()
-	if err != nil {
-		ylogger.Zero.Error().Err(err).Msg("encounter close error")
-	}
-	return err
-}
-
-// Read implements io.ReadCloser.
-func (y *YproxyRetryReader) Read(p []byte) (int, error) {
-
-	for retry := 0; retry < y.retryLimit; retry++ {
-
-		if y.needReacquire {
-
-			r, err := y.reacquireReaderFn(y.bytesWrite)
-
-			if err != nil {
-				// log error and continue.
-				// Try to mitigate overload problems with random sleep
-				ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("failed to reacquire external storage connection, wait and retry")
-
-				time.Sleep(time.Second)
-				continue
-			}
-			//
-			y.underlying = r
-
-			y.needReacquire = false
-		}
-
-		n, err := y.underlying.Read(p)
-		if err == io.EOF {
-			return n, err
-		}
-		if err != nil || n < 0 {
-			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("encounter read error")
-
-			// what if close failed?
-			_ = y.underlying.Close()
-
-			// try to reacquire connection to external storage and continue read
-			// from previously reached point
-
-			y.needReacquire = true
-			continue
-		} else {
-			y.bytesWrite += int64(n)
-
-			return n, err
-		}
-	}
-	return -1, fmt.Errorf("failed to unpload within retries")
-}
-
-const (
-	defaultRetryLimit = 100
-)
-
-func newYRetryReader(reacquireReaderFn func(offsetStart int64) (io.ReadCloser, error)) io.ReadCloser {
-	return &YproxyRetryReader{
-		reacquireReaderFn: reacquireReaderFn,
-		retryLimit:        defaultRetryLimit,
-		bytesWrite:        0,
-		needReacquire:     true,
-	}
-}
-
-var _ io.ReadCloser = &YproxyRetryReader{}
 
 func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
 
@@ -115,17 +33,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		msg := message.CatMessage{}
 		msg.Decode(body)
 
-		yr := newYRetryReader(
-			func(offsetStart int64) (io.ReadCloser, error) {
-				ylogger.Zero.Debug().Str("object-path", msg.Name).Int64("offset", offsetStart).Msg("cat object with offset")
-				r, err := s.CatFileFromStorage(msg.Name, offsetStart)
-				if err != nil {
-					return nil, err
-				}
-
-				return r, nil
-			},
-		)
+		yr := NewYRetryReader(NewRestartReader(s, msg.Name))
 
 		var contentReader io.Reader
 		contentReader = yr

@@ -15,6 +15,10 @@ build:
 unittest:
 	go test -race ./pkg/message/...
 
+
+mockgen:
+	mockgen -source=pkg/proc/yrreader.go -destination=pkg/mock/proc/yrreader.go -package=mock
+
 version = $(shell git describe --tags --abbrev=0)
 package:
 	sed -i 's/YPROXY_VERSION/${version}/g' debian/changelog
