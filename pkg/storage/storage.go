@@ -63,7 +63,7 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.
 		Range:  aws.String(fmt.Sprintf("bytes=%d-", offset)),
 	}
 
-	ylogger.Zero.Debug().Str("key", objectPath).Str("bucket",
+	ylogger.Zero.Debug().Str("key", objectPath).Int64("offset", offset).Str("bucket",
 		s.cnf.StorageBucket).Msg("requesting external storage")
 
 	object, err := sess.GetObject(input)
