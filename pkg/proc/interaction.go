@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/message"
@@ -167,6 +168,103 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			_ = ycl.ReplyError(err, "failed to upload")
 
 			return nil
+		}
+
+	case message.MessageTypeCopy:
+		msg := message.CopyMessage{}
+		msg.Decode(body)
+
+		//get config for old bucket
+		instanceCnf, err := config.ReadInstanceConfig("old cfg")
+		if err != nil {
+			_ = ycl.ReplyError(fmt.Errorf("could not read old config: %s", err), "failed to compelete request")
+			return nil
+		}
+		oldStorage := storage.NewStorage(
+			&instanceCnf.StorageCnf,
+		)
+
+		//list objects
+		objectMetas, err := oldStorage.ListPath("path") //TODO path
+		if err != nil {
+			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
+			return nil
+		}
+
+		var failed []*storage.S3ObjectMeta
+		for len(objectMetas) > 0 {
+			for i := 0; i < len(objectMetas); i++ {
+				//get reader
+				yr := NewYRetryReader(NewRestartReader(oldStorage, msg.Name))
+
+				var fromReader io.Reader
+				fromReader = yr
+				defer yr.Close()
+
+				if msg.Decrypt {
+					ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
+					fromReader, err = cr.Decrypt(yr)
+					if err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to decrypt object")
+						failed = append(failed, objectMetas[i])
+						continue
+					}
+				}
+
+				//reencrypt
+				r, w := io.Pipe()
+				mas := make([]byte, objectMetas[i].Size)
+
+				var ww io.WriteCloser = w
+				if msg.Encrypt {
+					var err error
+					ww, err = cr.Encrypt(w)
+					if err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
+						failed = append(failed, objectMetas[i])
+						continue
+					}
+				}
+
+				if n, err := fromReader.Read(mas); err != nil {
+					ylogger.Zero.Error().Err(err).Msg("failed to read copy data")
+					failed = append(failed, objectMetas[i])
+					continue
+
+				} else if n != int(objectMetas[i].Size) {
+					ylogger.Zero.Error().Err(fmt.Errorf("unfull read")).Msg("failed to read copy data")
+					failed = append(failed, objectMetas[i])
+					continue
+				}
+
+				if n, err := ww.Write(mas); err != nil {
+					ylogger.Zero.Error().Err(err).Msg("failed to write copy data")
+					failed = append(failed, objectMetas[i])
+					continue
+
+				} else if n != int(objectMetas[i].Size) {
+					ylogger.Zero.Error().Err(fmt.Errorf("unfull write")).Msg("failed to write copy data")
+					failed = append(failed, objectMetas[i])
+					continue
+				}
+
+				defer w.Close() //TODO проверить ошибку
+				if err := ww.Close(); err != nil {
+					ylogger.Zero.Error().Err(err).Msg("failed to close writer")
+					failed = append(failed, objectMetas[i])
+					continue
+				}
+
+				//write file
+				err = s.PutFileToDest(msg.Name+"_copy", r) //TODO path
+				if err != nil {
+					ylogger.Zero.Error().Err(err).Msg("failed to upload file")
+					failed = append(failed, objectMetas[i])
+					continue
+				}
+			}
+			objectMetas = failed
+			failed = make([]*storage.S3ObjectMeta, 0)
 		}
 
 	default:
