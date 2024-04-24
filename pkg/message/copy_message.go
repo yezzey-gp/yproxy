@@ -7,8 +7,6 @@ type CopyMessage struct {
 	Encrypt    bool
 	Name       string
 	OldCfgPath string
-	Sz         uint64
-	Data       []byte
 }
 
 var _ ProtoMessage = &CopyMessage{}
@@ -23,27 +21,45 @@ func NewCopyMessage(name, oldCfgPath string, encrypt, decrypt bool) *CopyMessage
 }
 
 func (cc *CopyMessage) Encode() []byte {
-	bt := make([]byte, 4+8+cc.Sz)
+	bt := []byte{
+		byte(MessageTypeCat),
+		byte(NoDecryptMessage),
+		byte(NoEncryptMessage),
+		0,
+	}
 
-	bt[0] = byte(MessageTypeCopy)
+	if cc.Decrypt {
+		bt[1] = byte(DecryptMessage)
+	}
 
-	// sizeof(sz) + data
+	if cc.Encrypt {
+		bt[2] = byte(EncryptMessage)
+	}
+
+	byteName := []byte(cc.Name)
+	binary.BigEndian.PutUint64(bt, uint64(len(byteName)))
+	bt = append(bt, byteName...)
+
+	byteOldCfg := []byte(cc.OldCfgPath)
+	binary.BigEndian.PutUint64(bt, uint64(len(byteOldCfg)))
+	bt = append(bt, byteOldCfg...)
+
 	ln := len(bt) + 8
-
 	bs := make([]byte, 8)
 	binary.BigEndian.PutUint64(bs, uint64(ln))
-
-	binary.BigEndian.PutUint64(bt[4:], uint64(cc.Sz))
-
-	// check data len more than cc.sz?
-	copy(bt[(4+8):], cc.Data[:cc.Sz])
-
 	return append(bs, bt...)
 }
 
 func (cc *CopyMessage) Decode(data []byte) {
-	msgLenBuf := data[4:12]
-	cc.Sz = binary.BigEndian.Uint64(msgLenBuf)
-	cc.Data = make([]byte, cc.Sz)
-	copy(cc.Data, data[12:12+cc.Sz])
+	if data[1] == byte(DecryptMessage) {
+		cc.Decrypt = true
+	}
+	if data[2] == byte(EncryptMessage) {
+		cc.Encrypt = true
+	}
+
+	nameLen := binary.BigEndian.Uint64(data[4:12])
+	cc.Name = string(data[12 : 12+nameLen])
+	oldConfLen := binary.BigEndian.Uint64(data[12+nameLen : 12+nameLen+8])
+	cc.OldCfgPath = string(data[12+nameLen+8 : 12+nameLen+8+oldConfLen])
 }
