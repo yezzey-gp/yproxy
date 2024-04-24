@@ -22,7 +22,7 @@ func NewCopyMessage(name, oldCfgPath string, encrypt, decrypt bool) *CopyMessage
 
 func (cc *CopyMessage) Encode() []byte {
 	bt := []byte{
-		byte(MessageTypeCat),
+		byte(MessageTypeCopy),
 		byte(NoDecryptMessage),
 		byte(NoEncryptMessage),
 		0,
