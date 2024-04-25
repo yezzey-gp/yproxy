@@ -163,8 +163,9 @@ func TestCopyMsg(t *testing.T) {
 	msg := message.NewCopyMessage("myname", "myoldcfg", true, true)
 	body := msg.Encode()
 
-	msg2 := message.CopyMessage{}
+	assert.Equal(body[8], byte(message.MessageTypeCopy))
 
+	msg2 := message.CopyMessage{}
 	msg2.Decode(body[8:])
 
 	assert.Equal("myname", msg2.Name)

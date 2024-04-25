@@ -25,6 +25,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		_ = ycl.ReplyError(err, "failed to read request packet")
 		return err
 	}
+	fmt.Printf("recieved: %v\n", tp)
+	fmt.Printf("type: %v\n", string(body))
 
 	ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
 

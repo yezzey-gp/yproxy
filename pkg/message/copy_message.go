@@ -47,8 +47,7 @@ func (cc *CopyMessage) Encode() []byte {
 	bt = append(bt, bs...)
 	bt = append(bt, byteOldCfg...)
 
-	ln := len(bt) + 8
-	binary.BigEndian.PutUint64(bs, uint64(ln))
+	binary.BigEndian.PutUint64(bs, uint64(len(bt)+8))
 	return append(bs, bt...)
 }
 
