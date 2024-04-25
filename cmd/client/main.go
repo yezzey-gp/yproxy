@@ -87,12 +87,8 @@ var copyCmd = &cobra.Command{
 			return err
 		}
 
+		ylogger.Zero.Debug().Str("name", args[0]).Msg("name")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
-
-		_, err = io.Copy(os.Stdout, con)
-		if err != nil {
-			return err
-		}
 
 		return nil
 	},
