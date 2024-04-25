@@ -52,7 +52,7 @@ var catCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Str("name", args[0]).Msg("cat")
+		ylogger.Zero.Info().Str("name", args[0]).Msg("cat")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		_, err = io.Copy(os.Stdout, con)
@@ -68,27 +68,29 @@ var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "copy",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
+		ylogger.Zero.Info().Msg("Exec copy command")
 		err := config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
 		}
-
+		ylogger.Zero.Info().Msg("config ok")
 		instanceCnf := config.InstanceConfig()
 
 		con, err := net.Dial("unix", instanceCnf.SocketPath)
 		if err != nil {
 			return err
 		}
+		ylogger.Zero.Info().Msg("socket ok")
 
 		defer con.Close()
+		ylogger.Zero.Info().Str("name", args[0]).Msg("copy")
 		msg := message.NewCopyMessage(args[0], oldCfgPath, encrypt, decrypt).Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
 		}
 
-		ylogger.Zero.Debug().Str("name", args[0]).Msg("copy")
+		ylogger.Zero.Info().Str("name", args[0]).Msg("copy")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		return nil
@@ -123,7 +125,7 @@ var putCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Str("name", args[0]).Msg("put")
+		ylogger.Zero.Info().Str("name", args[0]).Msg("put")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		const SZ = 65536
@@ -204,7 +206,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Str("name", args[0]).Msg("list")
+		ylogger.Zero.Info().Str("name", args[0]).Msg("list")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		ycl := client.NewYClient(con)
