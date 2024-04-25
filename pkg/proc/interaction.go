@@ -268,6 +268,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		}
 
 	default:
+		ylogger.Zero.Error().Any("type", tp).Msg("what tip is it")
 		_ = ycl.ReplyError(nil, "wrong request type")
 
 		return nil
