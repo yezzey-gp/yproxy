@@ -52,6 +52,7 @@ var catCmd = &cobra.Command{
 			return err
 		}
 
+		ylogger.Zero.Debug().Str("name", args[0]).Msg("cat")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		_, err = io.Copy(os.Stdout, con)
@@ -87,7 +88,7 @@ var copyCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Str("name", args[0]).Msg("name")
+		ylogger.Zero.Debug().Str("name", args[0]).Msg("copy")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		return nil
@@ -122,6 +123,7 @@ var putCmd = &cobra.Command{
 			return err
 		}
 
+		ylogger.Zero.Debug().Str("name", args[0]).Msg("put")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		const SZ = 65536
@@ -202,6 +204,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
+		ylogger.Zero.Debug().Str("name", args[0]).Msg("list")
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
 
 		ycl := client.NewYClient(con)
