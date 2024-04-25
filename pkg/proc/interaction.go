@@ -173,6 +173,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		}
 
 	case message.MessageTypeCopy:
+		fmt.Printf("start copy\n")
 		msg := message.CopyMessage{}
 		msg.Decode(body)
 
@@ -185,6 +186,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		oldStorage := storage.NewStorage(
 			&instanceCnf.StorageCnf,
 		)
+		fmt.Printf("ok new conf: %v\n", instanceCnf)
 
 		//list objects
 		objectMetas, err := oldStorage.ListPath("path") //TODO path
@@ -192,10 +194,12 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 			return nil
 		}
+		fmt.Printf("meta ok: %v\n", objectMetas)
 
 		var failed []*storage.S3ObjectMeta
 		for len(objectMetas) > 0 {
 			for i := 0; i < len(objectMetas); i++ {
+				fmt.Printf("files: %v\n", objectMetas[i].Path)
 				//get reader
 				yr := NewYRetryReader(NewRestartReader(oldStorage, msg.Name))
 
@@ -212,6 +216,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 						continue
 					}
 				}
+				fmt.Printf("decrypt ok:\n")
 
 				//reencrypt
 				r, w := io.Pipe()
@@ -238,6 +243,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					failed = append(failed, objectMetas[i])
 					continue
 				}
+				fmt.Printf("decrypt2 ok:\n")
 
 				if n, err := ww.Write(mas); err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to write copy data")
@@ -249,6 +255,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					failed = append(failed, objectMetas[i])
 					continue
 				}
+				fmt.Printf("decrypt3 ok:\n")
 
 				defer w.Close() //TODO проверить ошибку
 				if err := ww.Close(); err != nil {
@@ -266,6 +273,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				}
 			}
 			objectMetas = failed
+			fmt.Printf("next files: %d\n", len(objectMetas))
 			failed = make([]*storage.S3ObjectMeta, 0)
 		}
 
