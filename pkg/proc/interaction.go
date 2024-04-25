@@ -178,7 +178,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		msg.Decode(body)
 
 		//get config for old bucket
-		instanceCnf, err := config.ReadInstanceConfig("old cfg")
+		instanceCnf, err := config.ReadInstanceConfig(msg.OldCfgPath)
 		if err != nil {
 			_ = ycl.ReplyError(fmt.Errorf("could not read old config: %s", err), "failed to compelete request")
 			return nil
@@ -189,7 +189,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		fmt.Printf("ok new conf: %v\n", instanceCnf)
 
 		//list objects
-		objectMetas, err := oldStorage.ListPath("path") //TODO path
+		objectMetas, err := oldStorage.ListPath(msg.Name)
 		if err != nil {
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 			return nil
