@@ -227,6 +227,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				r, w := io.Pipe()
 				mas := make([]byte, objectMetas[i].Size)
 
+				fmt.Printf("pype ok:\n")
+
 				var ww io.WriteCloser = w
 				if msg.Encrypt {
 					var err error
@@ -234,33 +236,39 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					if err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
 						failed = append(failed, objectMetas[i])
+						fmt.Printf("encrypt fail %v\n", err)
 						continue
 					}
 				}
 
+				fmt.Printf("encrypt ok:\n")
 				if n, err := fromReader.Read(mas); err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to read copy data")
 					failed = append(failed, objectMetas[i])
+					fmt.Printf("read fail %v\n", err)
 					continue
 
 				} else if n != int(objectMetas[i].Size) {
 					ylogger.Zero.Error().Err(fmt.Errorf("unfull read")).Msg("failed to read copy data")
 					failed = append(failed, objectMetas[i])
+					fmt.Printf("encrypt fail size\n")
 					continue
 				}
-				fmt.Printf("decrypt2 ok:\n")
+				fmt.Printf("read ok:\n")
 
 				if n, err := ww.Write(mas); err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to write copy data")
 					failed = append(failed, objectMetas[i])
+					fmt.Printf("write fail %v\n", err)
 					continue
 
 				} else if n != int(objectMetas[i].Size) {
 					ylogger.Zero.Error().Err(fmt.Errorf("unfull write")).Msg("failed to write copy data")
 					failed = append(failed, objectMetas[i])
+					fmt.Printf("write fail size\n")
 					continue
 				}
-				fmt.Printf("decrypt3 ok:\n")
+				fmt.Printf("write ok:\n")
 
 				defer w.Close() //TODO проверить ошибку
 				if err := ww.Close(); err != nil {
@@ -268,6 +276,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					failed = append(failed, objectMetas[i])
 					continue
 				}
+				fmt.Printf("close ok:\n")
 
 				//write file
 				err = s.PutFileToDest(msg.Name+"_copy", r) //TODO path
@@ -276,6 +285,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					failed = append(failed, objectMetas[i])
 					continue
 				}
+				fmt.Printf("put file ok:\n")
 			}
 			objectMetas = failed
 			fmt.Printf("next files: %d\n", len(objectMetas))

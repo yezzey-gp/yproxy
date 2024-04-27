@@ -64,17 +64,17 @@ func (sp *S3SessionPool) createSession() (*session.Session, error) {
 }
 
 func (s *S3SessionPool) GetSession(ctx context.Context) (*s3.S3, error) {
-	fmt.Printf("get session 1\n")
+	//fmt.Printf("get session 1\n")
 	s.sem.Acquire(ctx, 1)
-	fmt.Printf("get session 2\n")
+	//fmt.Printf("get session 2\n")
 	defer s.sem.Release(1)
 
 	sess, err := s.createSession()
-	fmt.Printf("get session 3\n")
+	//fmt.Printf("get session 3\n")
 	if err != nil {
 		fmt.Printf("get session 4\n")
 		return nil, errors.Wrap(err, "failed to create new session")
 	}
-	fmt.Printf("get session 5\n")
+	//fmt.Printf("get session 5\n")
 	return s3.New(sess), nil
 }
