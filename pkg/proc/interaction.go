@@ -188,6 +188,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			&instanceCnf.StorageCnf,
 		)
 		fmt.Printf("ok new conf: %v\n", instanceCnf)
+		fmt.Printf("ok old st: %v\n", oldStorage)
 
 		//list objects
 		objectMetas, err := s.ListPath(msg.Name)
@@ -205,7 +206,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			for i := 0; i < len(objectMetas); i++ {
 				fmt.Printf("files: %v\n", objectMetas[i].Path)
 				//get reader
-				yr := NewYRetryReader(NewRestartReader(oldStorage, msg.Name))
+				yr := NewYRetryReader(NewRestartReader(s, msg.Name))
 
 				var fromReader io.Reader
 				fromReader = yr
