@@ -194,6 +194,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 			return nil
 		}
+		fmt.Printf("metas count %d\n", len(objectMetas))
 		fmt.Printf("meta ok: %v\n", objectMetas)
 
 		var failed []*storage.S3ObjectMeta
