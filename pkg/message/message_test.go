@@ -160,7 +160,7 @@ func TestListMsg(t *testing.T) {
 func TestCopyMsg(t *testing.T) {
 	assert := assert.New(t)
 
-	msg := message.NewCopyMessage("myname", "myoldcfg", true, true)
+	msg := message.NewCopyMessage("myname/mynextname", "myoldcfg/path", true, true)
 	body := msg.Encode()
 
 	assert.Equal(body[8], byte(message.MessageTypeCopy))
@@ -168,8 +168,8 @@ func TestCopyMsg(t *testing.T) {
 	msg2 := message.CopyMessage{}
 	msg2.Decode(body[8:])
 
-	assert.Equal("myname", msg2.Name)
-	assert.Equal("myoldcfg", msg2.OldCfgPath)
+	assert.Equal("myname/mynextname", msg2.Name)
+	assert.Equal("myoldcfg/path", msg2.OldCfgPath)
 	assert.True(msg2.Decrypt)
 	assert.True(msg2.Encrypt)
 }

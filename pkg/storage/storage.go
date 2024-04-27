@@ -142,6 +142,8 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
 	fmt.Printf("list 3\n")
 
 	out, err := sess.ListObjects(input)
+	fmt.Printf("list error: %v\n", err)
+	fmt.Printf("list out: %v\n", out.Contents)
 	fmt.Printf("list 4\n")
 
 	metas := make([]*S3ObjectMeta, 0)
