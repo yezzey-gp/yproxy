@@ -126,19 +126,23 @@ type S3ObjectMeta struct {
 }
 
 func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
+	fmt.Printf("list 1\n")
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
 		return nil, err
 	}
+	fmt.Printf("list 2\n")
 
 	prefix = path.Join(s.cnf.StoragePrefix, prefix)
 	input := &s3.ListObjectsInput{
 		Bucket: &s.cnf.StorageBucket,
 		Prefix: aws.String(prefix),
 	}
+	fmt.Printf("list 3\n")
 
 	out, err := sess.ListObjects(input)
+	fmt.Printf("list 4\n")
 
 	metas := make([]*S3ObjectMeta, 0)
 	for _, obj := range out.Contents {
@@ -147,6 +151,7 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
 			Size: *obj.Size,
 		})
 	}
+	fmt.Printf("list 5\n")
 
 	return metas, nil
 }

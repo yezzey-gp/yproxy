@@ -191,6 +191,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		//list objects
 		objectMetas, err := oldStorage.ListPath(msg.Name)
 		if err != nil {
+			fmt.Printf("list fail %v\n", err)
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 			return nil
 		}
