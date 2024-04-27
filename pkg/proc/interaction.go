@@ -3,6 +3,7 @@ package proc
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
 	"github.com/yezzey-gp/yproxy/config"
@@ -204,9 +205,10 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		for len(objectMetas) > 0 {
 			fmt.Printf("while %d\n", len(objectMetas))
 			for i := 0; i < len(objectMetas); i++ {
-				fmt.Printf("files: %v\n", objectMetas[i].Path)
+				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix) //wrong prefix
+				fmt.Printf("files: %v\n", path)
 				//get reader
-				yr := NewYRetryReader(NewRestartReader(s, msg.Name))
+				yr := NewYRetryReader(NewRestartReader(s, path))
 
 				var fromReader io.Reader
 				fromReader = yr
