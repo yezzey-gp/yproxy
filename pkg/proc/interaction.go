@@ -201,6 +201,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 		var failed []*storage.S3ObjectMeta
 		for len(objectMetas) > 0 {
+			fmt.Printf("while %d\n", len(objectMetas))
 			for i := 0; i < len(objectMetas); i++ {
 				fmt.Printf("files: %v\n", objectMetas[i].Path)
 				//get reader
@@ -279,6 +280,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			fmt.Printf("next files: %d\n", len(objectMetas))
 			failed = make([]*storage.S3ObjectMeta, 0)
 		}
+		fmt.Printf("finish \n")
 
 	default:
 		ylogger.Zero.Error().Any("type", tp).Msg("what tip is it")
