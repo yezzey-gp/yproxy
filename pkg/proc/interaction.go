@@ -52,10 +52,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				return err
 			}
 		}
-		_, err = io.Copy(ycl.Conn, contentReader)
+		n, err := io.Copy(ycl.Conn, contentReader)
 		if err != nil {
 			_ = ycl.ReplyError(err, "copy failed to compelete")
 		}
+		fmt.Printf("size: %d\n", n)
 
 	case message.MessageTypePut:
 
@@ -215,9 +216,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				defer yr.Close()
 
 				if msg.Decrypt {
+					fmt.Printf("decrypting\n")
 					ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
 					fromReader, err = cr.Decrypt(yr)
 					if err != nil {
+						fmt.Printf("decrypt fail: %v\n", err)
 						ylogger.Zero.Error().Err(err).Msg("failed to decrypt object")
 						failed = append(failed, objectMetas[i])
 						continue
@@ -227,66 +230,82 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 				//reencrypt
 				r, w := io.Pipe()
-				mas := make([]byte, objectMetas[i].Size)
+				//mas := make([]byte, objectMetas[i].Size)
 
-				fmt.Printf("pype ok:\n")
+				go func() {
+					defer w.Close() //TODO проверить ошибку
 
-				var ww io.WriteCloser = w
-				if msg.Encrypt {
-					var err error
-					ww, err = cr.Encrypt(w)
-					if err != nil {
-						ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
-						failed = append(failed, objectMetas[i])
-						fmt.Printf("encrypt fail %v\n", err)
-						continue
+					fmt.Printf("pype ok:\n")
+
+					var ww io.WriteCloser = w
+
+					if msg.Encrypt {
+						fmt.Printf("encrypting\n")
+						var err error
+						ww, err = cr.Encrypt(w)
+						if err != nil {
+							ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
+							failed = append(failed, objectMetas[i])
+							fmt.Printf("encrypt fail %v\n", err)
+							return
+						}
 					}
-				}
 
-				fmt.Printf("encrypt ok:\n")
-				if n, err := fromReader.Read(mas); err != nil {
-					ylogger.Zero.Error().Err(err).Msg("failed to read copy data")
-					failed = append(failed, objectMetas[i])
-					fmt.Printf("read fail %v\n", err)
-					continue
+					if _, err := io.Copy(ww, fromReader); err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to copy data")
+						failed = append(failed, objectMetas[i])
+						fmt.Printf("copy fail %v\n", err)
+						return
+					} // else if n != objectMetas[i].Size {
 
-				} else if n != int(objectMetas[i].Size) {
-					ylogger.Zero.Error().Err(fmt.Errorf("unfull read")).Msg("failed to read copy data")
-					failed = append(failed, objectMetas[i])
-					fmt.Printf("encrypt fail size\n")
-					continue
-				}
-				fmt.Printf("read ok:\n")
+					// 	ylogger.Zero.Error().Err(fmt.Errorf("unfull copy")).Msg("failed to copy data")
+					// 	failed = append(failed, objectMetas[i])
+					// 	fmt.Printf("copy fail size meta: %d actual %d\n", objectMetas[i].Size, n)
+					// 	return
+					// }
 
-				if n, err := ww.Write(mas); err != nil {
-					ylogger.Zero.Error().Err(err).Msg("failed to write copy data")
-					failed = append(failed, objectMetas[i])
-					fmt.Printf("write fail %v\n", err)
-					continue
+					if err := ww.Close(); err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to close writer")
+						failed = append(failed, objectMetas[i])
+						return
+					}
+					fmt.Printf("close ok:\n")
+				}()
 
-				} else if n != int(objectMetas[i].Size) {
-					ylogger.Zero.Error().Err(fmt.Errorf("unfull write")).Msg("failed to write copy data")
-					failed = append(failed, objectMetas[i])
-					fmt.Printf("write fail size\n")
-					continue
-				}
-				fmt.Printf("write ok:\n")
-
-				defer w.Close() //TODO проверить ошибку
-				if err := ww.Close(); err != nil {
-					ylogger.Zero.Error().Err(err).Msg("failed to close writer")
-					failed = append(failed, objectMetas[i])
-					continue
-				}
-				fmt.Printf("close ok:\n")
+				//wg.Wait()
 
 				//write file
-				err = s.PutFileToDest(msg.Name+"_copy", r) //TODO path
+				err = s.PutFileToDest(path+"_copy", r) //TODO path
 				if err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to upload file")
 					failed = append(failed, objectMetas[i])
 					continue
 				}
+				re, err := s.CatFileFromStorage(path+"_copy", 0)
+				if err != nil {
+					fmt.Printf("check fail 1 %v\n", err)
+				}
+				red, wr := io.Pipe()
+				go func() {
+					fmt.Printf("check start++++++++++++++++++++++++++++++++++\n")
+					n, err := io.Copy(wr, re)
+					if err != nil {
+						fmt.Printf("check fail 2 %v\n", err)
+					}
+					if n != objectMetas[i].Size {
+						fmt.Printf("check fail 3 size meta: %d actual %d\n", objectMetas[i].Size, n)
+					}
+					wr.Close()
+				}()
+				mas := make([]byte, objectMetas[i].Size)
+				n, err := red.Read(mas)
+				if err != nil {
+					fmt.Printf("check fail 22 %v\n", err)
+				}
+				if n != int(objectMetas[i].Size) {
+					fmt.Printf("check fail 23 size meta: %d actual %d\n", objectMetas[i].Size, n)
+				}
+				fmt.Printf("check success----------------------------------------------------------------\n")
 				fmt.Printf("put file ok:\n")
 			}
 			objectMetas = failed
