@@ -194,7 +194,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		}
 
 		var failed []*storage.S3ObjectMeta
-		for len(objectMetas) > 0 {
+		retryCount := 0
+		for len(objectMetas) > 0 && retryCount < 10 {
+			retryCount++
 			for i := 0; i < len(objectMetas); i++ {
 				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 
@@ -255,37 +257,9 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					failed = append(failed, objectMetas[i])
 					continue
 				}
-
-				//check file
-				re, err := s.CatFileFromStorage(path, 0)
-				if err != nil {
-					fmt.Printf("check fail 1 %v\n", err)
-				}
-				red, wr := io.Pipe()
-				go func() {
-					fmt.Printf("check start++++++++++++++++++++++++++++++++++\n")
-					n, err := io.Copy(wr, re)
-					if err != nil {
-						fmt.Printf("check fail 2 %v\n", err)
-					}
-					if n != objectMetas[i].Size {
-						fmt.Printf("check fail 3 size meta: %d actual %d\n", objectMetas[i].Size, n)
-					}
-					wr.Close()
-				}()
-				mas := make([]byte, objectMetas[i].Size)
-				n, err := red.Read(mas)
-				if err != nil {
-					fmt.Printf("check fail 22 %v\n", err)
-				}
-				if n != int(objectMetas[i].Size) {
-					fmt.Printf("check fail 23 size meta: %d actual %d\n", objectMetas[i].Size, n)
-				}
-				fmt.Printf("check success----------------------------------------------------------------\n")
-				fmt.Printf("put file ok:\n")
 			}
 			objectMetas = failed
-			fmt.Printf("next files: %d\n", len(objectMetas))
+			fmt.Printf("failed files count: %d\n", len(objectMetas))
 			failed = make([]*storage.S3ObjectMeta, 0)
 		}
 
