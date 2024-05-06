@@ -263,6 +263,16 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			failed = make([]*storage.S3ObjectMeta, 0)
 		}
 
+		if len(objectMetas) > 0 {
+			fmt.Printf("failed files count: %d\n", len(objectMetas))
+			fmt.Printf("failed files: %v\n", objectMetas)
+			ylogger.Zero.Error().Int("failed files count", len(objectMetas)).Msg("failed to upload some files")
+			ylogger.Zero.Error().Any("failed files", objectMetas).Msg("failed to upload some files")
+		} else {
+			fmt.Println("Copy finished successfully")
+			ylogger.Zero.Info().Msg("Copy finished successfully")
+		}
+
 		if _, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode()); err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
 			return nil
