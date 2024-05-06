@@ -125,26 +125,22 @@ type S3ObjectMeta struct {
 	Size int64
 }
 
-func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
-	fmt.Printf("list 1\n")
+func (s *S3StorageInteractor) ListPathOld(prefix string) ([]*S3ObjectMeta, error) {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
 		return nil, err
 	}
-	fmt.Printf("list 2\n")
 
 	prefix = path.Join(s.cnf.StoragePrefix, prefix)
 	input := &s3.ListObjectsInput{
 		Bucket: &s.cnf.StorageBucket,
 		Prefix: aws.String(prefix),
 	}
-	fmt.Printf("list 3\n")
 
 	out, err := sess.ListObjects(input)
 	fmt.Printf("list error: %v\n", err)
 	fmt.Printf("list out: %v\n", out.Contents)
-	fmt.Printf("list 4\n")
 
 	metas := make([]*S3ObjectMeta, 0)
 	for _, obj := range out.Contents {
@@ -153,7 +149,43 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
 			Size: *obj.Size,
 		})
 	}
-	fmt.Printf("list 5\n")
 
+	return metas, nil
+}
+
+func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
+	sess, err := s.pool.GetSession(context.TODO())
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
+		return nil, err
+	}
+
+	var continuationToken *string
+	prefix = path.Join(s.cnf.StoragePrefix, prefix)
+	metas := make([]*S3ObjectMeta, 0)
+
+	for {
+		input := &s3.ListObjectsV2Input{
+			Bucket:            &s.cnf.StorageBucket,
+			Prefix:            aws.String(prefix),
+			ContinuationToken: continuationToken,
+		}
+
+		out, err := sess.ListObjectsV2(input)
+		fmt.Printf("list error: %v\n", err)
+
+		for _, obj := range out.Contents {
+			metas = append(metas, &S3ObjectMeta{
+				Path: *obj.Key,
+				Size: *obj.Size,
+			})
+		}
+
+		if !*out.IsTruncated {
+			break
+		}
+
+		continuationToken = out.NextContinuationToken
+	}
 	return metas, nil
 }

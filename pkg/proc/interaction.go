@@ -186,67 +186,55 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			_ = ycl.ReplyError(fmt.Errorf("could not read old config: %s", err), "failed to compelete request")
 			return nil
 		}
-		oldStorage := storage.NewStorage(
-			&instanceCnf.StorageCnf,
-		)
+		config.EmbedDefaults(&instanceCnf)
+		oldStorage := storage.NewStorage(&instanceCnf.StorageCnf)
 		fmt.Printf("ok new conf: %v\n", instanceCnf)
-		fmt.Printf("ok old st: %v\n", oldStorage)
 
 		//list objects
-		objectMetas, err := s.ListPath(msg.Name)
+		objectMetas, err := oldStorage.ListPath(msg.Name)
 		if err != nil {
-			fmt.Printf("list fail %v\n", err)
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
 			return nil
 		}
-		fmt.Printf("metas count %d\n", len(objectMetas))
-		fmt.Printf("meta ok: %v\n", objectMetas)
 
 		var failed []*storage.S3ObjectMeta
 		for len(objectMetas) > 0 {
-			fmt.Printf("while %d\n", len(objectMetas))
 			for i := 0; i < len(objectMetas); i++ {
-				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix) //wrong prefix
-				fmt.Printf("files: %v\n", path)
-				//get reader
-				yr := NewYRetryReader(NewRestartReader(s, path))
+				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 
+				//get reader
+				yr := NewYRetryReader(NewRestartReader(oldStorage, path))
 				var fromReader io.Reader
 				fromReader = yr
 				defer yr.Close()
 
 				if msg.Decrypt {
-					fmt.Printf("decrypting\n")
-					ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
 					fromReader, err = cr.Decrypt(yr)
 					if err != nil {
-						fmt.Printf("decrypt fail: %v\n", err)
 						ylogger.Zero.Error().Err(err).Msg("failed to decrypt object")
 						failed = append(failed, objectMetas[i])
 						continue
 					}
 				}
-				fmt.Printf("decrypt ok:\n")
 
 				//reencrypt
 				r, w := io.Pipe()
-				//mas := make([]byte, objectMetas[i].Size)
 
 				go func() {
-					defer w.Close() //TODO проверить ошибку
-
-					fmt.Printf("pype ok:\n")
+					defer func() {
+						if err := w.Close(); err != nil {
+							ylogger.Zero.Warn().Err(err).Msg("failed to close writer")
+						}
+					}()
 
 					var ww io.WriteCloser = w
 
 					if msg.Encrypt {
-						fmt.Printf("encrypting\n")
 						var err error
 						ww, err = cr.Encrypt(w)
 						if err != nil {
 							ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
 							failed = append(failed, objectMetas[i])
-							fmt.Printf("encrypt fail %v\n", err)
 							return
 						}
 					}
@@ -254,34 +242,26 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 					if _, err := io.Copy(ww, fromReader); err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to copy data")
 						failed = append(failed, objectMetas[i])
-						fmt.Printf("copy fail %v\n", err)
 						return
-					} // else if n != objectMetas[i].Size {
-
-					// 	ylogger.Zero.Error().Err(fmt.Errorf("unfull copy")).Msg("failed to copy data")
-					// 	failed = append(failed, objectMetas[i])
-					// 	fmt.Printf("copy fail size meta: %d actual %d\n", objectMetas[i].Size, n)
-					// 	return
-					// }
+					}
 
 					if err := ww.Close(); err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to close writer")
 						failed = append(failed, objectMetas[i])
 						return
 					}
-					fmt.Printf("close ok:\n")
 				}()
 
-				//wg.Wait()
-
 				//write file
-				err = s.PutFileToDest(path+"_copy", r) //TODO path
+				err = s.PutFileToDest(path, r)
 				if err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to upload file")
 					failed = append(failed, objectMetas[i])
 					continue
 				}
-				re, err := s.CatFileFromStorage(path+"_copy", 0)
+
+				//check file
+				re, err := s.CatFileFromStorage(path, 0)
 				if err != nil {
 					fmt.Printf("check fail 1 %v\n", err)
 				}
@@ -312,7 +292,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			fmt.Printf("next files: %d\n", len(objectMetas))
 			failed = make([]*storage.S3ObjectMeta, 0)
 		}
-		fmt.Printf("finish \n")
+
+		if _, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode()); err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+			return nil
+		}
 
 	default:
 		ylogger.Zero.Error().Any("type", tp).Msg("what tip is it")
