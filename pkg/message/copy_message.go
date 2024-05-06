@@ -25,49 +25,49 @@ func NewCopyMessage(name, oldCfgPath string, encrypt, decrypt bool) *CopyMessage
 	}
 }
 
-func (cc *CopyMessage) Encode() []byte {
-	bt := []byte{
+func (message *CopyMessage) Encode() []byte {
+	encodedMessage := []byte{
 		byte(MessageTypeCopy),
 		byte(NoDecryptMessage),
 		byte(NoEncryptMessage),
 		0,
 	}
 
-	if cc.Decrypt {
-		bt[1] = byte(DecryptMessage)
+	if message.Decrypt {
+		encodedMessage[1] = byte(DecryptMessage)
 	}
 
-	if cc.Encrypt {
-		bt[2] = byte(EncryptMessage)
+	if message.Encrypt {
+		encodedMessage[2] = byte(EncryptMessage)
 	}
 
-	byteName := []byte(cc.Name)
-	bs := make([]byte, 8)
-	binary.BigEndian.PutUint64(bs, uint64(len(byteName)))
-	bt = append(bt, bs...)
-	bt = append(bt, byteName...)
+	byteName := []byte(message.Name)
+	byteLen := make([]byte, 8)
+	binary.BigEndian.PutUint64(byteLen, uint64(len(byteName)))
+	encodedMessage = append(encodedMessage, byteLen...)
+	encodedMessage = append(encodedMessage, byteName...)
 
-	byteOldCfg := []byte(cc.OldCfgPath)
-	binary.BigEndian.PutUint64(bs, uint64(len(byteOldCfg)))
-	bt = append(bt, bs...)
-	bt = append(bt, byteOldCfg...)
+	byteOldCfg := []byte(message.OldCfgPath)
+	binary.BigEndian.PutUint64(byteLen, uint64(len(byteOldCfg)))
+	encodedMessage = append(encodedMessage, byteLen...)
+	encodedMessage = append(encodedMessage, byteOldCfg...)
 
-	binary.BigEndian.PutUint64(bs, uint64(len(bt)+8))
-	fmt.Printf("send: %v\n", MessageType(bt[0]))
-	ylogger.Zero.Debug().Str("object-path", MessageType(bt[0]).String()).Msg("decrypt object")
-	return append(bs, bt...)
+	binary.BigEndian.PutUint64(byteLen, uint64(len(encodedMessage)+8))
+	fmt.Printf("send: %v\n", MessageType(encodedMessage[0]))
+	ylogger.Zero.Debug().Str("object-path", MessageType(encodedMessage[0]).String()).Msg("decrypt object")
+	return append(byteLen, encodedMessage...)
 }
 
-func (cc *CopyMessage) Decode(data []byte) {
+func (encodedMessage *CopyMessage) Decode(data []byte) {
 	if data[1] == byte(DecryptMessage) {
-		cc.Decrypt = true
+		encodedMessage.Decrypt = true
 	}
 	if data[2] == byte(EncryptMessage) {
-		cc.Encrypt = true
+		encodedMessage.Encrypt = true
 	}
 
 	nameLen := binary.BigEndian.Uint64(data[4:12])
-	cc.Name = string(data[12 : 12+nameLen])
+	encodedMessage.Name = string(data[12 : 12+nameLen])
 	oldConfLen := binary.BigEndian.Uint64(data[12+nameLen : 12+nameLen+8])
-	cc.OldCfgPath = string(data[12+nameLen+8 : 12+nameLen+8+oldConfLen])
+	encodedMessage.OldCfgPath = string(data[12+nameLen+8 : 12+nameLen+8+oldConfLen])
 }

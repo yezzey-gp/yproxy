@@ -74,9 +74,7 @@ func (y *YproxyRetryReader) Close() error {
 
 // Read implements io.ReadCloser.
 func (y *YproxyRetryReader) Read(p []byte) (int, error) {
-	//fmt.Printf("start read:\n")
 	for retry := 0; retry < y.retryLimit; retry++ {
-		//fmt.Printf("retry %d:\n", retry)
 		if y.needReacquire {
 
 			err := y.underlying.Restart(y.bytesWrite)
@@ -84,7 +82,6 @@ func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 			if err != nil {
 				// log error and continue.
 				// Try to mitigate overload problems with random sleep
-				fmt.Printf("some err: %v\n", err)
 				ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("failed to reacquire external storage connection, wait and retry")
 
 				time.Sleep(time.Second)
@@ -99,7 +96,6 @@ func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 			return n, err
 		}
 		if err != nil || n < 0 {
-			fmt.Printf("some n: %d or err2: %v\n", n, err)
 			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("encounter read error")
 
 			// what if close failed?

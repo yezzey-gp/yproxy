@@ -26,8 +26,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		_ = ycl.ReplyError(err, "failed to read request packet")
 		return err
 	}
-	fmt.Printf("recieved: %v\n", tp)
-	fmt.Printf("type: %s\n", string(body))
 
 	ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
 
@@ -56,7 +54,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		if err != nil {
 			_ = ycl.ReplyError(err, "copy failed to compelete")
 		}
-		fmt.Printf("size: %d\n", n)
+		ylogger.Zero.Debug().Int64("copied bytes", n).Msg("decrypt object")
 
 	case message.MessageTypePut:
 
@@ -153,8 +151,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 			return nil
 		}
-		fmt.Printf("metas count %d\n", len(objectMetas))
-		fmt.Printf("meta ok: %v\n", objectMetas)
+
 		const chunkSize = 1000
 
 		for i := 0; i < len(objectMetas); i += chunkSize {
@@ -176,7 +173,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		}
 
 	case message.MessageTypeCopy:
-		fmt.Printf("start copy\n")
 		msg := message.CopyMessage{}
 		msg.Decode(body)
 

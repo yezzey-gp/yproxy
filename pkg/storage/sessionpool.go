@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/yezzey-gp/aws-sdk-go/aws"
@@ -69,7 +68,6 @@ func (s *S3SessionPool) GetSession(ctx context.Context) (*s3.S3, error) {
 
 	sess, err := s.createSession()
 	if err != nil {
-		fmt.Printf("get session 4\n")
 		return nil, errors.Wrap(err, "failed to create new session")
 	}
 	return s3.New(sess), nil

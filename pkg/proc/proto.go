@@ -52,7 +52,5 @@ func (r *ProtoReader) ReadPacket() (message.MessageType, []byte, error) {
 	}
 
 	msgType := message.MessageType(data[0])
-	ylogger.Zero.Debug().Any("type", msgType).Msg("logger")
-	fmt.Printf("type: %v\n", msgType)
 	return msgType, data, nil
 }
