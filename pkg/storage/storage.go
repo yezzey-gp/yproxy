@@ -132,21 +132,34 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
 		return nil, err
 	}
 
+	var continuationToken *string
 	prefix = path.Join(s.cnf.StoragePrefix, prefix)
-	input := &s3.ListObjectsInput{
-		Bucket: &s.cnf.StorageBucket,
-		Prefix: aws.String(prefix),
-	}
-
-	out, err := sess.ListObjects(input)
-
 	metas := make([]*S3ObjectMeta, 0)
-	for _, obj := range out.Contents {
-		metas = append(metas, &S3ObjectMeta{
-			Path: *obj.Key,
-			Size: *obj.Size,
-		})
-	}
 
+	for {
+		input := &s3.ListObjectsV2Input{
+			Bucket:            &s.cnf.StorageBucket,
+			Prefix:            aws.String(prefix),
+			ContinuationToken: continuationToken,
+		}
+
+		out, err := sess.ListObjectsV2(input)
+		if err != nil {
+			fmt.Printf("list error: %v\n", err)
+		}
+
+		for _, obj := range out.Contents {
+			metas = append(metas, &S3ObjectMeta{
+				Path: *obj.Key,
+				Size: *obj.Size,
+			})
+		}
+
+		if !*out.IsTruncated {
+			break
+		}
+
+		continuationToken = out.NextContinuationToken
+	}
 	return metas, nil
 }

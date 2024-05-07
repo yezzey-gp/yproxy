@@ -19,6 +19,7 @@ const (
 	MessageTypeList            = MessageType(48)
 	MessageTypeObjectMeta      = MessageType(49)
 	MessageTypePatch           = MessageType(50)
+	MessageTypeCopy            = MessageType(51)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)
@@ -45,6 +46,8 @@ func (m MessageType) String() string {
 		return "LIST"
 	case MessageTypeObjectMeta:
 		return "OBJECT META"
+	case MessageTypeCopy:
+		return "COPY"
 	}
 	return "UNKNOWN"
 }

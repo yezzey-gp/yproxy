@@ -17,6 +17,7 @@ import (
 )
 
 var cfgPath string
+var oldCfgPath string
 var logLevel string
 var decrypt bool
 var encrypt bool
@@ -51,12 +52,42 @@ var catCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed cat message")
 
 		_, err = io.Copy(os.Stdout, con)
 		if err != nil {
 			return err
 		}
+
+		return nil
+	},
+}
+
+var copyCmd = &cobra.Command{
+	Use:   "copy",
+	Short: "copy",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ylogger.Zero.Info().Msg("Execute copy command")
+		err := config.LoadInstanceConfig(cfgPath)
+		if err != nil {
+			return err
+		}
+		instanceCnf := config.InstanceConfig()
+
+		con, err := net.Dial("unix", instanceCnf.SocketPath)
+		if err != nil {
+			return err
+		}
+
+		defer con.Close()
+		ylogger.Zero.Info().Str("name", args[0]).Msg("copy")
+		msg := message.NewCopyMessage(args[0], oldCfgPath, encrypt, decrypt).Encode()
+		_, err = con.Write(msg)
+		if err != nil {
+			return err
+		}
+
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed copy msg")
 
 		return nil
 	},
@@ -90,7 +121,7 @@ var putCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed put message")
 
 		const SZ = 65536
 		chunk := make([]byte, SZ)
@@ -170,7 +201,7 @@ var listCmd = &cobra.Command{
 			return err
 		}
 
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed message")
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed list message")
 
 		ycl := client.NewYClient(con)
 		r := proc.NewProtoReader(ycl)
@@ -215,6 +246,11 @@ func init() {
 
 	catCmd.PersistentFlags().BoolVarP(&decrypt, "decrypt", "d", false, "decrypt external object or not")
 	rootCmd.AddCommand(catCmd)
+
+	copyCmd.PersistentFlags().BoolVarP(&decrypt, "decrypt", "d", false, "decrypt external object or not")
+	copyCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "e", false, "encrypt external object before put")
+	copyCmd.PersistentFlags().StringVarP(&oldCfgPath, "old-config", "", "/etc/yproxy/yproxy.yaml", "path to old yproxy config file")
+	rootCmd.AddCommand(copyCmd)
 
 	putCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "e", false, "encrypt external object before put")
 	rootCmd.AddCommand(putCmd)

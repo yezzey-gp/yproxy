@@ -3,8 +3,10 @@ package proc
 import (
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 
+	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/message"
@@ -48,10 +50,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				return err
 			}
 		}
-		_, err = io.Copy(ycl.Conn, contentReader)
+		n, err := io.Copy(ycl.Conn, contentReader)
 		if err != nil {
 			_ = ycl.ReplyError(err, "copy failed to complete")
 		}
+		ylogger.Zero.Debug().Int64("copied bytes", n).Msg("decrypt object")
 
 	case message.MessageTypePut:
 
@@ -169,7 +172,117 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			return nil
 		}
 
+	case message.MessageTypeCopy:
+		msg := message.CopyMessage{}
+		msg.Decode(body)
+
+		//get config for old bucket
+		instanceCnf, err := config.ReadInstanceConfig(msg.OldCfgPath)
+		if err != nil {
+			_ = ycl.ReplyError(fmt.Errorf("could not read old config: %s", err), "failed to compelete request")
+			return nil
+		}
+		config.EmbedDefaults(&instanceCnf)
+		oldStorage := storage.NewStorage(&instanceCnf.StorageCnf)
+		fmt.Printf("ok new conf: %v\n", instanceCnf)
+
+		//list objects
+		objectMetas, err := oldStorage.ListPath(msg.Name)
+		if err != nil {
+			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
+			return nil
+		}
+
+		var failed []*storage.S3ObjectMeta
+		retryCount := 0
+		for len(objectMetas) > 0 && retryCount < 10 {
+			retryCount++
+			for i := 0; i < len(objectMetas); i++ {
+				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
+
+				//get reader
+				yr := NewYRetryReader(NewRestartReader(oldStorage, path))
+				var fromReader io.Reader
+				fromReader = yr
+				defer yr.Close()
+
+				if msg.Decrypt {
+					fromReader, err = cr.Decrypt(yr)
+					if err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to decrypt object")
+						failed = append(failed, objectMetas[i])
+						continue
+					}
+				}
+
+				//reencrypt
+				r, w := io.Pipe()
+
+				go func() {
+					defer func() {
+						if err := w.Close(); err != nil {
+							ylogger.Zero.Warn().Err(err).Msg("failed to close writer")
+						}
+					}()
+
+					var ww io.WriteCloser = w
+
+					if msg.Encrypt {
+						var err error
+						ww, err = cr.Encrypt(w)
+						if err != nil {
+							ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
+							failed = append(failed, objectMetas[i])
+							return
+						}
+					}
+
+					if _, err := io.Copy(ww, fromReader); err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to copy data")
+						failed = append(failed, objectMetas[i])
+						return
+					}
+
+					if err := ww.Close(); err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to close writer")
+						failed = append(failed, objectMetas[i])
+						return
+					}
+				}()
+
+				//write file
+				err = s.PutFileToDest(path, r)
+				if err != nil {
+					ylogger.Zero.Error().Err(err).Msg("failed to upload file")
+					failed = append(failed, objectMetas[i])
+					continue
+				}
+			}
+			objectMetas = failed
+			fmt.Printf("failed files count: %d\n", len(objectMetas))
+			failed = make([]*storage.S3ObjectMeta, 0)
+		}
+
+		if _, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode()); err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+			return nil
+		}
+
+		if len(objectMetas) > 0 {
+			fmt.Printf("failed files count: %d\n", len(objectMetas))
+			fmt.Printf("failed files: %v\n", objectMetas)
+			ylogger.Zero.Error().Int("failed files count", len(objectMetas)).Msg("failed to upload some files")
+			ylogger.Zero.Error().Any("failed files", objectMetas).Msg("failed to upload some files")
+
+			_ = ycl.ReplyError(err, "failed to copy some files")
+			return nil
+		} else {
+			fmt.Println("Copy finished successfully")
+			ylogger.Zero.Info().Msg("Copy finished successfully")
+		}
+
 	default:
+		ylogger.Zero.Error().Any("type", tp).Msg("what tip is it")
 		_ = ycl.ReplyError(nil, "wrong request type")
 
 		return nil

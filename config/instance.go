@@ -66,12 +66,29 @@ func EmbedDefaults(cfgInstance *Instance) {
 	}
 }
 
-func LoadInstanceConfig(cfgPath string) error {
+func LoadInstanceConfig(cfgPath string) (err error) {
+	cfgInstance, err = ReadInstanceConfig(cfgPath)
+	if err != nil {
+		return
+	}
+
+	cfgInstance.ReadSystemdSocketPath()
+	EmbedDefaults(&cfgInstance)
+
+	configBytes, err := json.MarshalIndent(cfgInstance, "", "  ")
+	if err != nil {
+		return
+	}
+
+	log.Println("Running config:", string(configBytes))
+	return
+}
+
+func ReadInstanceConfig(cfgPath string) (Instance, error) {
 	var cfg Instance
 	file, err := os.Open(cfgPath)
 	if err != nil {
-		cfgInstance = cfg
-		return err
+		return cfg, err
 	}
 	defer func(file *os.File) {
 		err := file.Close()
@@ -81,20 +98,8 @@ func LoadInstanceConfig(cfgPath string) error {
 	}(file)
 
 	if err := initInstanceConfig(file, &cfg); err != nil {
-		cfgInstance = cfg
-		return err
+		return cfg, err
 	}
 
-	configBytes, err := json.MarshalIndent(cfg, "", "  ")
-	if err != nil {
-		cfgInstance = cfg
-		return err
-	}
-
-	cfg.ReadSystemdSocketPath()
-	EmbedDefaults(&cfg)
-
-	log.Println("Running config:", string(configBytes))
-	cfgInstance = cfg
-	return nil
+	return cfg, nil
 }
