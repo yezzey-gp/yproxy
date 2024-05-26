@@ -89,6 +89,19 @@ var copyCmd = &cobra.Command{
 
 		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed copy msg")
 
+		client := client.NewYClient(con)
+		pr := proc.NewProtoReader(client)
+
+		ansType, body, err := pr.ReadPacket()
+		if err != nil {
+			ylogger.Zero.Debug().Err(err).Msg("error while ans")
+			return err
+		}
+
+		if ansType != message.MessageTypeReadyForQuery {
+			return fmt.Errorf("failed to copy, msg: %v", body)
+		}
+
 		return nil
 	},
 }
