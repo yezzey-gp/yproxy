@@ -201,13 +201,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 
 				//get reader
-				yr := NewYRetryReader(NewRestartReader(oldStorage, path))
+				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path))
 				var fromReader io.Reader
-				fromReader = yr
-				defer yr.Close()
+				fromReader = readerFromOldBucket
+				defer readerFromOldBucket.Close()
 
 				if msg.Decrypt {
-					fromReader, err = cr.Decrypt(yr)
+					fromReader, err = cr.Decrypt(readerFromOldBucket)
 					if err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to decrypt object")
 						failed = append(failed, objectMetas[i])
@@ -216,20 +216,20 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				}
 
 				//reencrypt
-				r, w := io.Pipe()
+				readerEncrypt, writerEncrypt := io.Pipe()
 
 				go func() {
 					defer func() {
-						if err := w.Close(); err != nil {
+						if err := writerEncrypt.Close(); err != nil {
 							ylogger.Zero.Warn().Err(err).Msg("failed to close writer")
 						}
 					}()
 
-					var ww io.WriteCloser = w
+					var writerToNewBucket io.WriteCloser = writerEncrypt
 
 					if msg.Encrypt {
 						var err error
-						ww, err = cr.Encrypt(w)
+						writerToNewBucket, err = cr.Encrypt(writerEncrypt)
 						if err != nil {
 							ylogger.Zero.Error().Err(err).Msg("failed to encrypt object")
 							failed = append(failed, objectMetas[i])
@@ -237,13 +237,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 						}
 					}
 
-					if _, err := io.Copy(ww, fromReader); err != nil {
+					if _, err := io.Copy(writerToNewBucket, fromReader); err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to copy data")
 						failed = append(failed, objectMetas[i])
 						return
 					}
 
-					if err := ww.Close(); err != nil {
+					if err := writerToNewBucket.Close(); err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to close writer")
 						failed = append(failed, objectMetas[i])
 						return
@@ -251,7 +251,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				}()
 
 				//write file
-				err = s.PutFileToDest(path, r)
+				err = s.PutFileToDest(path, readerEncrypt)
 				if err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to upload file")
 					failed = append(failed, objectMetas[i])
@@ -263,11 +263,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			failed = make([]*storage.S3ObjectMeta, 0)
 		}
 
-		if _, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode()); err != nil {
-			_ = ycl.ReplyError(err, "failed to upload")
-			return nil
-		}
-
 		if len(objectMetas) > 0 {
 			fmt.Printf("failed files count: %d\n", len(objectMetas))
 			fmt.Printf("failed files: %v\n", objectMetas)
@@ -276,13 +271,17 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 			_ = ycl.ReplyError(err, "failed to copy some files")
 			return nil
-		} else {
-			fmt.Println("Copy finished successfully")
-			ylogger.Zero.Info().Msg("Copy finished successfully")
 		}
 
+		if _, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode()); err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+			return nil
+		}
+		fmt.Println("Copy finished successfully")
+		ylogger.Zero.Info().Msg("Copy finished successfully")
+
 	default:
-		ylogger.Zero.Error().Any("type", tp).Msg("what tip is it")
+		ylogger.Zero.Error().Any("type", tp).Msg("what type is it")
 		_ = ycl.ReplyError(nil, "wrong request type")
 
 		return nil
