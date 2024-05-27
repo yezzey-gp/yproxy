@@ -207,7 +207,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				defer readerFromOldBucket.Close()
 
 				if msg.Decrypt {
-					fromReader, err = cr.Decrypt(readerFromOldBucket)
+					oldCr, err := crypt.NewCrypto(&instanceCnf.CryptoCnf)
+					if err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to configure decrypter")
+						failed = append(failed, objectMetas[i])
+						continue
+					}
+					fromReader, err = oldCr.Decrypt(readerFromOldBucket)
 					if err != nil {
 						ylogger.Zero.Error().Err(err).Msg("failed to decrypt object")
 						failed = append(failed, objectMetas[i])
