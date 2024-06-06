@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -53,6 +54,26 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 				return
 			}
 		}
+	}()
+
+	go func() {
+
+		listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.StatPort))
+		if err != nil {
+			ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
+			return
+		}
+		defer listener.Close()
+
+		for {
+			clConn, err := listener.Accept()
+			if err != nil {
+				ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
+			}
+			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
+
+		}
+
 	}()
 
 	listener, err := net.Listen("unix", instanceCnf.SocketPath)

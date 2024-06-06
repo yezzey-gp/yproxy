@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"net"
 
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/message"
@@ -12,12 +11,12 @@ import (
 )
 
 type ProtoReader struct {
-	c net.Conn
+	c io.ReadWriteCloser
 }
 
-func NewProtoReader(ycl *client.YClient) *ProtoReader {
+func NewProtoReader(ycl client.YproxyClient) *ProtoReader {
 	return &ProtoReader{
-		c: ycl.Conn,
+		c: ycl.GetRW(),
 	}
 }
 
