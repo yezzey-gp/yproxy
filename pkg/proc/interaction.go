@@ -14,10 +14,10 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient) error {
+func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
 
 	defer func() {
-		_ = ycl.Conn.Close()
+		_ = ycl.Close()
 	}()
 
 	pr := NewProtoReader(ycl)
@@ -50,7 +50,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				return err
 			}
 		}
-		n, err := io.Copy(ycl.Conn, contentReader)
+		n, err := io.Copy(ycl.GetRW(), contentReader)
 		if err != nil {
 			_ = ycl.ReplyError(err, "copy failed to complete")
 		}
@@ -77,7 +77,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 				if err != nil {
 					_ = ycl.ReplyError(err, "failed to encrypt")
 
-					ycl.Conn.Close()
+					ycl.Close()
 					return
 				}
 			}
@@ -133,7 +133,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			return nil
 		}
 
-		_, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode())
+		_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
 
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
@@ -155,7 +155,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 		const chunkSize = 1000
 
 		for i := 0; i < len(objectMetas); i += chunkSize {
-			_, err = ycl.Conn.Write(message.NewObjectMetaMessage(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
+			_, err = ycl.GetRW().Write(message.NewObjectMetaMessage(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to upload")
 
@@ -164,7 +164,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 
 		}
 
-		_, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode())
+		_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
 
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
@@ -279,7 +279,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl *client.YClient
 			return nil
 		}
 
-		if _, err = ycl.Conn.Write(message.NewReadyForQueryMessage().Encode()); err != nil {
+		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
 			return nil
 		}
