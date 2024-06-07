@@ -43,7 +43,11 @@ func (y *YRestartReader) Restart(offsetStart int64) error {
 	if y.underlying != nil {
 		_ = y.underlying.Close()
 	}
-	ylogger.Zero.Debug().Str("object-path", y.name).Int64("offset", offsetStart).Msg("cat object with offset")
+	if offsetStart != 0 {
+		ylogger.Zero.Debug().Str("object-path", y.name).Msg("cat object with offset")
+	} else {
+		ylogger.Zero.Error().Str("object-path", y.name).Int64("offset", offsetStart).Msg("cat object with offset after possible error")
+	}
 	r, err := y.s.CatFileFromStorage(y.name, offsetStart)
 	if err != nil {
 		return err
