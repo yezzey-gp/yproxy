@@ -59,11 +59,15 @@ func initInstanceConfig(file *os.File, cfgInstance *Instance) error {
 
 const (
 	DefaultStorageConcurrency = 100
+	DefaultStatPort           = 7432
 )
 
 func EmbedDefaults(cfgInstance *Instance) {
 	if cfgInstance.StorageCnf.StorageConcurrency == 0 {
 		cfgInstance.StorageCnf.StorageConcurrency = DefaultStorageConcurrency
+	}
+	if cfgInstance.StatPort == 0 {
+		cfgInstance.StatPort = DefaultStatPort
 	}
 }
 

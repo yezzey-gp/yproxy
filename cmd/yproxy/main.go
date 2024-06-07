@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 
 		instanceCnf := config.InstanceConfig()
 
-		instance := core.Instance{}
+		instance := core.NewInstance()
 
 		ylogger.ReloadLogger(instanceCnf.LogPath)
 		if logLevel == "" {
@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 
 		return instance.Run(instanceCnf)
 	},
-	Version:       pkg.YproxyVersionRevision,
+	Version: pkg.YproxyVersionRevision,
 }
 
 func init() {

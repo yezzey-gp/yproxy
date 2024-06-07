@@ -13,11 +13,40 @@ type YproxyClient interface {
 	ID() uint
 	ReplyError(err error, msg string) error
 	GetRW() io.ReadWriteCloser
+
+	SetOPType(optype byte)
+	OPType() byte
+
+	SetExternalFilePath(path string)
+	ExternalFilePath() string
+
 	Close() error
 }
 
 type YClient struct {
 	Conn net.Conn
+	op   byte
+	path string
+}
+
+// ExternalFilePath implements YproxyClient.
+func (y *YClient) ExternalFilePath() string {
+	return y.path
+}
+
+// SetExternalFilePath implements YproxyClient.
+func (y *YClient) SetExternalFilePath(path string) {
+	y.path = path
+}
+
+// OPType implements YproxyClient.
+func (y *YClient) OPType() byte {
+	return y.op
+}
+
+// SetOPType implements YproxyClient.
+func (y *YClient) SetOPType(optype byte) {
+	y.op = optype
 }
 
 // Close implements YproxyClient.

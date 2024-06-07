@@ -29,11 +29,15 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 	ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
 
+	ycl.SetOPType(byte(tp))
+
 	switch tp {
 	case message.MessageTypeCat:
 		// omit first byte
 		msg := message.CatMessage{}
 		msg.Decode(body)
+
+		ycl.SetExternalFilePath(msg.Name)
 
 		yr := NewYRetryReader(NewRestartReader(s, msg.Name), msg.StartOffset)
 
@@ -60,6 +64,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 		msg := message.PutMessage{}
 		msg.Decode(body)
+
+		ycl.SetExternalFilePath(msg.Name)
 
 		var w io.WriteCloser
 
@@ -145,6 +151,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		msg := message.ListMessage{}
 		msg.Decode(body)
 
+		ycl.SetExternalFilePath(msg.Prefix)
+
 		objectMetas, err := s.ListPath(msg.Prefix)
 		if err != nil {
 			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
@@ -175,6 +183,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 	case message.MessageTypeCopy:
 		msg := message.CopyMessage{}
 		msg.Decode(body)
+
+		ycl.SetExternalFilePath(msg.Name)
 
 		//get config for old bucket
 		instanceCnf, err := config.ReadInstanceConfig(msg.OldCfgPath)

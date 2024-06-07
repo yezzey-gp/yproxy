@@ -11,6 +11,7 @@ import (
 
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/client"
+	"github.com/yezzey-gp/yproxy/pkg/clientpool"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/sdnotifier"
@@ -19,7 +20,13 @@ import (
 )
 
 type Instance struct {
-	crypter crypt.Crypter
+	pool clientpool.Pool
+}
+
+func NewInstance() *Instance {
+	return &Instance{
+		pool: clientpool.NewClientPool(),
+	}
 }
 
 func (i *Instance) Run(instanceCnf *config.Instance) error {
@@ -56,6 +63,7 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		}
 	}()
 
+	/* dispatch statistic server */
 	go func() {
 
 		listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.StatPort))
@@ -72,8 +80,17 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 			}
 			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
 
-		}
+			clConn.Write([]byte("Hello from stats server!!\n"))
+			clConn.Write([]byte("Client id | Optype | External Path \n"))
 
+			i.pool.ClientPoolForeach(func(cl client.YproxyClient) error {
+				_, err := clConn.Write([]byte(fmt.Sprintf("%v | %v | %v\n", cl.ID(), cl.OPType(), cl.ExternalFilePath())))
+
+				return err
+			})
+
+			clConn.Close()
+		}
 	}()
 
 	listener, err := net.Listen("unix", instanceCnf.SocketPath)
@@ -120,6 +137,17 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 			ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
 		}
 		ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
-		go proc.ProcConn(s, cr, client.NewYClient(clConn))
+		go func() {
+			ycl := client.NewYClient(clConn)
+			i.pool.Put(ycl)
+			if err := proc.ProcConn(s, cr, ycl); err != nil {
+				ylogger.Zero.Debug().Uint("id", ycl.ID()).Err(err).Msg("got error serving client")
+			}
+			_, err := i.pool.Pop(ycl.ID())
+			if err != nil {
+				// ?? wtf
+				ylogger.Zero.Error().Uint("id", ycl.ID()).Err(err).Msg("got error erasing client from pool")
+			}
+		}()
 	}
 }
