@@ -201,7 +201,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 
 				//get reader
-				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path))
+				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path), 0)
 				var fromReader io.Reader
 				fromReader = readerFromOldBucket
 				defer readerFromOldBucket.Close()
