@@ -13,8 +13,7 @@ build:
 ####################### TESTS #######################
 
 unittest:
-	go test -race ./pkg/message/...
-
+	go test -race ./pkg/message/... ./pkg/proc/...
 
 mockgen:
 	mockgen -source=pkg/proc/yrreader.go -destination=pkg/mock/proc/yrreader.go -package=mock

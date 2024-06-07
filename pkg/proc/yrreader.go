@@ -58,7 +58,7 @@ type YproxyRetryReader struct {
 	io.ReadCloser
 	underlying RestartReader
 
-	bytesWrite    int64
+	offsetReached int64
 	retryLimit    int
 	needReacquire bool
 }
@@ -79,12 +79,12 @@ func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 
 		if y.needReacquire {
 
-			err := y.underlying.Restart(y.bytesWrite)
+			err := y.underlying.Restart(y.offsetReached)
 
 			if err != nil {
 				// log error and continue.
 				// Try to mitigate overload problems with random sleep
-				ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("failed to reacquire external storage connection, wait and retry")
+				ylogger.Zero.Error().Err(err).Int("offset reached", int(y.offsetReached)).Int("retry count", int(retry)).Msg("failed to reacquire external storage connection, wait and retry")
 
 				time.Sleep(time.Second)
 				continue
@@ -98,7 +98,7 @@ func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 			return n, err
 		}
 		if err != nil || n < 0 {
-			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.bytesWrite)).Int("retry count", int(retry)).Msg("encounter read error")
+			ylogger.Zero.Error().Err(err).Int("offset reached", int(y.offsetReached)).Int("retry count", int(retry)).Msg("encounter read error")
 
 			// what if close failed?
 			_ = y.underlying.Close()
@@ -109,7 +109,7 @@ func (y *YproxyRetryReader) Read(p []byte) (int, error) {
 			y.needReacquire = true
 			continue
 		} else {
-			y.bytesWrite += int64(n)
+			y.offsetReached += int64(n)
 
 			return n, err
 		}
@@ -121,12 +121,12 @@ const (
 	defaultRetryLimit = 100
 )
 
-func NewYRetryReader(r RestartReader) io.ReadCloser {
+func NewYRetryReader(r RestartReader, initOffset uint64) io.ReadCloser {
 	return &YproxyRetryReader{
 		underlying:    r,
 		retryLimit:    defaultRetryLimit,
-		bytesWrite:    0,
-		needReacquire: true,
+		offsetReached: int64(initOffset),
+		needReacquire: true, /* do initial storage request */
 	}
 }
 
