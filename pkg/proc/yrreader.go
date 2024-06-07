@@ -125,11 +125,11 @@ const (
 	defaultRetryLimit = 100
 )
 
-func NewYRetryReader(r RestartReader, initOffset uint64) io.ReadCloser {
+func NewYRetryReader(r RestartReader) io.ReadCloser {
 	return &YproxyRetryReader{
 		underlying:    r,
 		retryLimit:    defaultRetryLimit,
-		offsetReached: int64(initOffset),
+		offsetReached: 0,
 		needReacquire: true, /* do initial storage request */
 	}
 }

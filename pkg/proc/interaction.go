@@ -39,7 +39,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 		ycl.SetExternalFilePath(msg.Name)
 
-		yr := NewYRetryReader(NewRestartReader(s, msg.Name), msg.StartOffset)
+		yr := NewYRetryReader(NewRestartReader(s, msg.Name))
 
 		var contentReader io.Reader
 		contentReader = yr
@@ -54,6 +54,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 				return err
 			}
 		}
+
+		if msg.StartOffset != 0 {
+			io.CopyN(io.Discard, contentReader, int64(msg.StartOffset))
+		}
+
 		n, err := io.Copy(ycl.GetRW(), contentReader)
 		if err != nil {
 			_ = ycl.ReplyError(err, "copy failed to complete")
@@ -211,7 +216,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 
 				//get reader
-				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path), 0)
+				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path))
 				var fromReader io.Reader
 				fromReader = readerFromOldBucket
 				defer readerFromOldBucket.Close()

@@ -17,7 +17,7 @@ func TestYproxyRetryReaderEmpty(t *testing.T) {
 
 	rr := mock.NewMockRestartReader(ctrl)
 
-	yr := proc.NewYRetryReader(rr, 0)
+	yr := proc.NewYRetryReader(rr)
 
 	buf := []byte{1, 233, 45}
 
@@ -38,7 +38,7 @@ func TestYproxyRetryReaderSimpleRead(t *testing.T) {
 
 	rr := mock.NewMockRestartReader(ctrl)
 
-	yr := proc.NewYRetryReader(rr, 0)
+	yr := proc.NewYRetryReader(rr)
 
 	buf := []byte{0, 0, 0}
 
@@ -74,7 +74,7 @@ func TestYproxyRetryReaderSimpleReadRetry(t *testing.T) {
 
 	rr := mock.NewMockRestartReader(ctrl)
 
-	yr := proc.NewYRetryReader(rr, 0)
+	yr := proc.NewYRetryReader(rr)
 
 	buf := []byte{0, 0, 0}
 
