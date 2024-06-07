@@ -14,6 +14,7 @@ func TestCatMsg(t *testing.T) {
 	type tcase struct {
 		name    string
 		decrypt bool
+		off     uint64
 		err     error
 	}
 
@@ -21,11 +22,18 @@ func TestCatMsg(t *testing.T) {
 		{
 			"nam1",
 			true,
+			0,
+			nil,
+		},
+		{
+			"nam1",
+			true,
+			10,
 			nil,
 		},
 	} {
 
-		msg := message.NewCatMessage(tt.name, tt.decrypt)
+		msg := message.NewCatMessage(tt.name, tt.decrypt, tt.off)
 		body := msg.Encode()
 
 		msg2 := message.CatMessage{}

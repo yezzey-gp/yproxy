@@ -6,16 +6,18 @@ import (
 )
 
 type CatMessage struct {
-	Decrypt bool
-	Name    string
+	Decrypt     bool
+	Name        string
+	StartOffset uint64
 }
 
 var _ ProtoMessage = &CatMessage{}
 
-func NewCatMessage(name string, decrypt bool) *CatMessage {
+func NewCatMessage(name string, decrypt bool, StartOffset uint64) *CatMessage {
 	return &CatMessage{
-		Name:    name,
-		Decrypt: decrypt,
+		Name:        name,
+		Decrypt:     decrypt,
+		StartOffset: StartOffset,
 	}
 }
 
@@ -33,8 +35,15 @@ func (c *CatMessage) Encode() []byte {
 		bt[1] = byte(NoDecryptMessage)
 	}
 
+	if c.StartOffset != 0 {
+		bt[2] = byte(ExtendedMesssage)
+	}
+
 	bt = append(bt, []byte(c.Name)...)
 	bt = append(bt, 0)
+	if c.StartOffset != 0 {
+		bt = binary.BigEndian.AppendUint64(bt, c.StartOffset)
+	}
 	ln := len(bt) + 8
 
 	bs := make([]byte, 8)
@@ -46,6 +55,9 @@ func (c *CatMessage) Decode(body []byte) {
 	c.Name = c.GetCatName(body[4:])
 	if body[1] == byte(DecryptMessage) {
 		c.Decrypt = true
+	}
+	if body[2] == byte(ExtendedMesssage) {
+		c.StartOffset = binary.BigEndian.Uint64(body[4+len(c.Name)+1:])
 	}
 }
 

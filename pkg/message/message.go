@@ -26,6 +26,8 @@ const (
 
 	EncryptMessage   = RequestEncryption(1)
 	NoEncryptMessage = RequestEncryption(0)
+
+	ExtendedMesssage = byte(1)
 )
 
 func (m MessageType) String() string {

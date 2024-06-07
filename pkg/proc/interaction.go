@@ -35,7 +35,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		msg := message.CatMessage{}
 		msg.Decode(body)
 
-		yr := NewYRetryReader(NewRestartReader(s, msg.Name))
+		yr := NewYRetryReader(NewRestartReader(s, msg.Name), msg.StartOffset)
 
 		var contentReader io.Reader
 		contentReader = yr

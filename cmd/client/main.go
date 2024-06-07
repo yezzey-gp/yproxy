@@ -21,6 +21,7 @@ var oldCfgPath string
 var logLevel string
 var decrypt bool
 var encrypt bool
+var offset uint64
 
 var rootCmd = &cobra.Command{
 	Use:   "",
@@ -46,7 +47,7 @@ var catCmd = &cobra.Command{
 		}
 
 		defer con.Close()
-		msg := message.NewCatMessage(args[0], decrypt).Encode()
+		msg := message.NewCatMessage(args[0], decrypt, offset).Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -258,6 +259,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "", "log level")
 
 	catCmd.PersistentFlags().BoolVarP(&decrypt, "decrypt", "d", false, "decrypt external object or not")
+	catCmd.PersistentFlags().Uint64VarP(&offset, "offset", "o", 0, "start offset for read")
 	rootCmd.AddCommand(catCmd)
 
 	copyCmd.PersistentFlags().BoolVarP(&decrypt, "decrypt", "d", false, "decrypt external object or not")
