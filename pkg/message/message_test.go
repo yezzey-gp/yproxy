@@ -181,3 +181,19 @@ func TestCopyMsg(t *testing.T) {
 	assert.True(msg2.Decrypt)
 	assert.True(msg2.Encrypt)
 }
+
+func TestDeleteMsg(t *testing.T) {
+	assert := assert.New(t)
+
+	msg := message.NewDeleteMessage("myname/mynextname", 5432, 42)
+	body := msg.Encode()
+
+	assert.Equal(body[8], byte(message.MessageTypeDelete))
+
+	msg2 := message.DeleteMessage{}
+	msg2.Decode(body[8:])
+
+	assert.Equal("myname/mynextname", msg2.Name)
+	assert.Equal(5432, msg2.Port)
+	assert.Equal(42, msg2.Segnum)
+}

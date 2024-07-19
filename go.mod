@@ -15,12 +15,16 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
+require golang.org/x/text v0.14.0 // indirect
+
 require (
-	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/cockroachdb/apd v1.1.0 // indirect
+	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 )
 
 require (
@@ -28,6 +32,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/mock v1.6.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
