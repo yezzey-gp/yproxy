@@ -27,7 +27,9 @@ var rootCmd = &cobra.Command{
 
 		instance := core.NewInstance()
 
-		ylogger.ReloadLogger(instanceCnf.LogPath)
+		if instanceCnf.LogPath != "" {
+			ylogger.ReloadLogger(instanceCnf.LogPath)
+		}
 		if logLevel == "" {
 			logLevel = instanceCnf.LogLevel
 		}

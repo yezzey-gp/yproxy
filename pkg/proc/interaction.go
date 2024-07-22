@@ -46,6 +46,11 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		defer yr.Close()
 
 		if msg.Decrypt {
+			if cr == nil {
+				_ = ycl.ReplyError(err, "failed to decrypt object, decrypter not configured")
+				ycl.Close()
+				return nil
+			}
 			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
 			contentReader, err = cr.Decrypt(yr)
 			if err != nil {
@@ -83,6 +88,12 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 			var ww io.WriteCloser = w
 			if msg.Encrypt {
+				if cr == nil {
+					_ = ycl.ReplyError(err, "failed to encrypt, crypter not configured")
+					ycl.Close()
+					return
+				}
+
 				var err error
 				ww, err = cr.Encrypt(w)
 				if err != nil {
@@ -91,6 +102,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 					ycl.Close()
 					return
 				}
+			} else {
+				ylogger.Zero.Debug().Str("path", msg.Name).Msg("omit encryption for chunk")
 			}
 
 			defer w.Close()
