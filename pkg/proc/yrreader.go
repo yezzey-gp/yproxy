@@ -22,7 +22,10 @@ type YRestartReader struct {
 
 // Close implements RestartReader.
 func (y *YRestartReader) Close() error {
-	return y.underlying.Close()
+	if y.underlying != nil {
+		return y.underlying.Close()
+	}
+	return nil
 }
 
 // Read implements RestartReader.
