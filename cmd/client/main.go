@@ -24,6 +24,7 @@ var encrypt bool
 var offset uint64
 var segmentPort int
 var segmentNum int
+var confirm bool
 
 // TODOV
 func Runner(f func(net.Conn, *config.Instance, []string) error) func(*cobra.Command, []string) error {
@@ -233,7 +234,7 @@ var deleteCmd = &cobra.Command{
 
 		defer con.Close()
 		ylogger.Zero.Info().Str("name", args[0]).Msg("delete")
-		msg := message.NewDeleteMessage(args[0], segmentPort, segmentNum).Encode()
+		msg := message.NewDeleteMessage(args[0], segmentPort, segmentNum, confirm).Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -292,6 +293,7 @@ func init() {
 
 	deleteCmd.PersistentFlags().IntVarP(&segmentPort, "port", "p", 6000, "port that segment is listening on")
 	deleteCmd.PersistentFlags().IntVarP(&segmentNum, "segnum", "s", 0, "number of the segment")
+	deleteCmd.PersistentFlags().BoolVarP(&confirm, "confirm", "", false, "confirm deletion")
 	rootCmd.AddCommand(deleteCmd)
 }
 
