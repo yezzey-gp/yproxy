@@ -55,6 +55,21 @@ init:
 		switch q := msg.(type) {
 		case *pgproto3.Query:
 			ylogger.Zero.Info().Str("query", q.String).Msg("serving request")
+
+			conn.Send(&pgproto3.RowDescription{
+				Fields: []pgproto3.FieldDescription{
+					{
+						Name:        []byte("row"),
+						DataTypeOID: 25, /* textoid*/
+					},
+				},
+			})
+
+			conn.Send(&pgproto3.DataRow{
+				Values: [][]byte{[]byte("hi")},
+			})
+			conn.Send(&pgproto3.CommandComplete{CommandTag: []byte("YPROXYHELLO")})
+
 			conn.Send(&pgproto3.ReadyForQuery{})
 			conn.Flush()
 		default:
