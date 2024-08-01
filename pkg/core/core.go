@@ -29,6 +29,22 @@ func NewInstance() *Instance {
 	}
 }
 
+func (i *Instance) DispatchServer(listener net.Listener, server func(net.Conn)) {
+	go func() {
+		defer listener.Close()
+		for {
+			clConn, err := listener.Accept()
+			if err != nil {
+				ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
+				continue
+			}
+			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
+
+			go server(clConn)
+		}
+	}()
+}
+
 func (i *Instance) Run(instanceCnf *config.Instance) error {
 
 	sigs := make(chan os.Signal, 1)
@@ -64,41 +80,30 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 	}()
 
 	/* dispatch statistic server */
-	go func() {
 
-		listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.StatPort))
-		if err != nil {
-			ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
-			return
-		}
-		defer listener.Close()
+	ststListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.StatPort))
+	if err != nil {
+		ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
+		return err
+	}
 
-		for {
-			clConn, err := listener.Accept()
-			if err != nil {
-				ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
-			}
-			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
+	i.DispatchServer(ststListener, func(clConn net.Conn) {
+		defer clConn.Close()
 
-			clConn.Write([]byte("Hello from stats server!!\n"))
-			clConn.Write([]byte("Client id | Optype | External Path \n"))
+		clConn.Write([]byte("Hello from stats server!!\n"))
+		clConn.Write([]byte("Client id | Optype | External Path \n"))
 
-			i.pool.ClientPoolForeach(func(cl client.YproxyClient) error {
-				_, err := clConn.Write([]byte(fmt.Sprintf("%v | %v | %v\n", cl.ID(), cl.OPType(), cl.ExternalFilePath())))
-
-				return err
-			})
-
-			clConn.Close()
-		}
-	}()
+		i.pool.ClientPoolForeach(func(cl client.YproxyClient) error {
+			_, err := clConn.Write([]byte(fmt.Sprintf("%v | %v | %v\n", cl.ID(), cl.OPType(), cl.ExternalFilePath())))
+			return err
+		})
+	})
 
 	listener, err := net.Listen("unix", instanceCnf.SocketPath)
 	if err != nil {
 		ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
 		return err
 	}
-	defer listener.Close()
 
 	s := storage.NewStorage(
 		&instanceCnf.StorageCnf,
@@ -108,7 +113,21 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 	if instanceCnf.CryptoCnf.GPGKeyPath != "" {
 		cr, err = crypt.NewCrypto(&instanceCnf.CryptoCnf)
 	}
-	
+
+	i.DispatchServer(listener, func(clConn net.Conn) {
+		defer clConn.Close()
+		ycl := client.NewYClient(clConn)
+		i.pool.Put(ycl)
+		if err := proc.ProcConn(s, cr, ycl); err != nil {
+			ylogger.Zero.Debug().Uint("id", ycl.ID()).Err(err).Msg("got error serving client")
+		}
+		_, err := i.pool.Pop(ycl.ID())
+		if err != nil {
+			// ?? wtf
+			ylogger.Zero.Debug().Uint("id", ycl.ID()).Err(err).Msg("got error erasing client from pool")
+		}
+	})
+
 	if err != nil {
 		return err
 	}
@@ -129,28 +148,6 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		}
 	}()
 
-	go func() {
-		<-ctx.Done()
-		os.Exit(0)
-	}()
-
-	for {
-		clConn, err := listener.Accept()
-		if err != nil {
-			ylogger.Zero.Error().Err(err).Msg("failed to accept connection")
-		}
-		ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client connection")
-		go func() {
-			ycl := client.NewYClient(clConn)
-			i.pool.Put(ycl)
-			if err := proc.ProcConn(s, cr, ycl); err != nil {
-				ylogger.Zero.Debug().Uint("id", ycl.ID()).Err(err).Msg("got error serving client")
-			}
-			_, err := i.pool.Pop(ycl.ID())
-			if err != nil {
-				// ?? wtf
-				ylogger.Zero.Error().Uint("id", ycl.ID()).Err(err).Msg("got error erasing client from pool")
-			}
-		}()
-	}
+	<-ctx.Done()
+	return nil
 }
