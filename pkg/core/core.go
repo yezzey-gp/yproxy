@@ -80,24 +80,35 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 	}()
 
 	/* dispatch statistic server */
+	if instanceCnf.StatPort != 0 {
+		statListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.StatPort))
+		if err != nil {
+			ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
+			return err
+		}
 
-	ststListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.StatPort))
-	if err != nil {
-		ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
-		return err
+		i.DispatchServer(statListener, func(clConn net.Conn) {
+			defer clConn.Close()
+
+			clConn.Write([]byte("Hello from stats server!!\n"))
+			clConn.Write([]byte("Client id | Optype | External Path \n"))
+
+			i.pool.ClientPoolForeach(func(cl client.YproxyClient) error {
+				_, err := clConn.Write([]byte(fmt.Sprintf("%v | %v | %v\n", cl.ID(), cl.OPType(), cl.ExternalFilePath())))
+				return err
+			})
+		})
 	}
 
-	i.DispatchServer(ststListener, func(clConn net.Conn) {
-		defer clConn.Close()
-
-		clConn.Write([]byte("Hello from stats server!!\n"))
-		clConn.Write([]byte("Client id | Optype | External Path \n"))
-
-		i.pool.ClientPoolForeach(func(cl client.YproxyClient) error {
-			_, err := clConn.Write([]byte(fmt.Sprintf("%v | %v | %v\n", cl.ID(), cl.OPType(), cl.ExternalFilePath())))
+	if instanceCnf.PsqlPort != 0 {
+		psqlListener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", instanceCnf.PsqlPort))
+		if err != nil {
+			ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
 			return err
-		})
-	})
+		}
+
+		i.DispatchServer(psqlListener, PostgresIface)
+	}
 
 	listener, err := net.Listen("unix", instanceCnf.SocketPath)
 	if err != nil {
