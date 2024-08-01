@@ -21,6 +21,7 @@ type Instance struct {
 	LogLevel   string `json:"log_level" toml:"log_level" yaml:"log_level"`
 	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
 	StatPort   int    `json:"stat_port" toml:"stat_port" yaml:"stat_port"`
+	PsqlPort   int    `json:"psql_port" toml:"psql_port" yaml:"psql_port"`
 
 	SystemdNotificationsDebug bool `json:"sd_notifications_debug" toml:"sd_notifications_debug" yaml:"sd_notifications_debug"`
 	systemdSocketPath         string
