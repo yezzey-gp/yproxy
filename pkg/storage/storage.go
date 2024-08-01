@@ -180,21 +180,24 @@ func (s *S3StorageInteractor) MoveObject(from string, to string) error {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
 		return err
 	}
+	ylogger.Zero.Debug().Msg("aquired session")
 
-	fromPath := path.Join(s.cnf.StoragePrefix, from)
+	fromPath := from
 	toPath := path.Join(s.cnf.StoragePrefix, to)
+	ylogger.Zero.Debug().Str("to", toPath).Msg("to path")
 
 	input := s3.CopyObjectInput{
 		Bucket:     &s.cnf.StorageBucket,
-		CopySource: aws.String(fromPath),
+		CopySource: aws.String(s.cnf.StorageBucket + "/" + fromPath),
 		Key:        aws.String(toPath),
 	}
 
-	_, err = sess.CopyObject(&input)
+	out, err := sess.CopyObject(&input)
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to copy object")
 		return err
 	}
+	ylogger.Zero.Debug().Str("", out.GoString()).Msg("copied object")
 
 	input2 := s3.DeleteObjectInput{
 		Bucket: &s.cnf.StorageBucket,
@@ -205,5 +208,6 @@ func (s *S3StorageInteractor) MoveObject(from string, to string) error {
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to delete old object")
 	}
+	ylogger.Zero.Debug().Msg("deleted object")
 	return err
 }
