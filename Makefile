@@ -8,7 +8,7 @@ LDFLAGS=-ldflags "-X github.com/yezzey-gp/yproxy/pkg.GitRevision=${GIT_REVISION}
 build:
 	mkdir -p devbin
 	go build -pgo=auto -o devbin/yproxy $(LDFLAGS) ./cmd/yproxy
-	go build -o devbin/client ./cmd/client
+	go build -o devbin/yp-client ./cmd/client
 
 ####################### TESTS #######################
 
