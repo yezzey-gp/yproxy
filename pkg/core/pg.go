@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/jackc/pgx/v5/pgproto3"
+	"github.com/yezzey-gp/yproxy/pkg/core/parser"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -56,22 +57,46 @@ init:
 		case *pgproto3.Query:
 			ylogger.Zero.Info().Str("query", q.String).Msg("serving request")
 
-			conn.Send(&pgproto3.RowDescription{
-				Fields: []pgproto3.FieldDescription{
-					{
-						Name:        []byte("row"),
-						DataTypeOID: 25, /* textoid*/
+			node, err := parser.Parse(q.String)
+
+			if err != nil {
+				conn.Send(&pgproto3.ErrorResponse{
+					Message: "failed to parse query",
+				})
+				conn.Send(&pgproto3.ReadyForQuery{})
+				conn.Flush()
+				continue
+			}
+
+			ylogger.Zero.Info().Interface("node", node).Msg("parsed nodetree")
+
+			switch node.(type) {
+			case *parser.SayHelloCommand:
+				conn.Send(&pgproto3.RowDescription{
+					Fields: []pgproto3.FieldDescription{
+						{
+							Name:        []byte("row"),
+							DataTypeOID: 25, /* textoid*/
+						},
 					},
-				},
-			})
+				})
 
-			conn.Send(&pgproto3.DataRow{
-				Values: [][]byte{[]byte("hi")},
-			})
-			conn.Send(&pgproto3.CommandComplete{CommandTag: []byte("YPROXYHELLO")})
+				conn.Send(&pgproto3.DataRow{
+					Values: [][]byte{[]byte("hi")},
+				})
+				conn.Send(&pgproto3.CommandComplete{CommandTag: []byte("YPROXYHELLO")})
 
-			conn.Send(&pgproto3.ReadyForQuery{})
-			conn.Flush()
+				conn.Send(&pgproto3.ReadyForQuery{})
+				conn.Flush()
+			default:
+				conn.Send(&pgproto3.ErrorResponse{
+					Message: "unknown command",
+				})
+
+				conn.Send(&pgproto3.ReadyForQuery{})
+				conn.Flush()
+			}
+
 		default:
 			ylogger.Zero.Error().Interface("msg", q).Msg("unssuported message type")
 		}

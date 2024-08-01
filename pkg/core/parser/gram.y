@@ -24,6 +24,8 @@ func NewYpParser() YpParser {
 // CMDS
 %type <node> command
 
+%type<node> say_hello_command
+
 %type<str> reversed_keyword
 
 
@@ -61,5 +63,11 @@ reversed_keyword:
 
 
 command:
+    say_hello_command
+    {
+        setParseTree(yylex, $1)
+    } | /* nothing */ { $$ = nil }
+
+say_hello_command:
     SAY HELLO { $$ = &SayHelloCommand{} } 
     ;

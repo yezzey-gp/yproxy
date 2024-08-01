@@ -56,35 +56,35 @@ var yyExca = [...]int{
 
 const yyPrivate = 57344
 
-const yyLast = 6
+const yyLast = 7
 
 var yyAct = [...]int{
 
-	5, 6, 3, 4, 1, 2,
+	6, 7, 4, 5, 1, 3, 2,
 }
 var yyPact = [...]int{
 
-	-2, -1000, -10, -4, -1000, -1000, -1000,
+	-2, -1000, -10, -1000, -4, -1000, -1000, -1000,
 }
 var yyPgo = [...]int{
 
-	0, 5, 5, 4, 3,
+	0, 6, 5, 5, 4, 3,
 }
 var yyR1 = [...]int{
 
-	0, 3, 4, 4, 2, 2, 1,
+	0, 4, 5, 5, 3, 3, 1, 1, 2,
 }
 var yyR2 = [...]int{
 
-	0, 2, 1, 0, 1, 1, 2,
+	0, 2, 1, 0, 1, 1, 1, 0, 2,
 }
 var yyChk = [...]int{
 
-	-1000, -3, -1, 4, -4, 10, 5,
+	-1000, -4, -1, -2, 4, -5, 10, 5,
 }
 var yyDef = [...]int{
 
-	0, -2, 3, 0, 1, 2, 6,
+	7, -2, 3, 6, 0, 1, 2, 8,
 }
 var yyTok1 = [...]int{
 
@@ -437,29 +437,41 @@ yydefault:
 
 	case 2:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line gram.y:53
+//line gram.y:55
 		{
 		}
 	case 3:
 		yyDollar = yyS[yypt-0 : yypt+1]
-//line gram.y:54
+//line gram.y:56
 		{
 		}
 	case 4:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line gram.y:58
+//line gram.y:60
 		{
 			yyVAL.str = yyDollar[1].str
 		}
 	case 5:
 		yyDollar = yyS[yypt-1 : yypt+1]
-//line gram.y:59
+//line gram.y:61
 		{
 			yyVAL.str = yyDollar[1].str
 		}
 	case 6:
+		yyDollar = yyS[yypt-1 : yypt+1]
+//line gram.y:67
+		{
+			setParseTree(yylex, yyDollar[1].node)
+		}
+	case 7:
+		yyDollar = yyS[yypt-0 : yypt+1]
+//line gram.y:69
+		{
+			yyVAL.node = nil
+		}
+	case 8:
 		yyDollar = yyS[yypt-2 : yypt+1]
-//line gram.y:64
+//line gram.y:72
 		{
 			yyVAL.node = &SayHelloCommand{}
 		}
