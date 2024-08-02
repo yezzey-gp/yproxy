@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"path"
-	"time"
+	"strings"
 
 	"github.com/yezzey-gp/aws-sdk-go/aws"
 	"github.com/yezzey-gp/aws-sdk-go/service/s3"
@@ -53,6 +53,7 @@ func NewStorage(cnf *config.Storage) (StorageInteractor, error) {
 		}, nil
 	default:
 		return nil, fmt.Errorf("wrong storage type " + cnf.StorageType)
+
 	}
 }
 
@@ -129,9 +130,8 @@ func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffst
 }
 
 type S3ObjectMeta struct {
-	Path         string
-	Size         int64
-	LastModified time.Time
+	Path string
+	Size int64
 }
 
 func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
@@ -159,9 +159,8 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*S3ObjectMeta, error) {
 
 		for _, obj := range out.Contents {
 			metas = append(metas, &S3ObjectMeta{
-				Path:         *obj.Key,
-				Size:         *obj.Size,
-				LastModified: *obj.LastModified,
+				Path: *obj.Key,
+				Size: *obj.Size,
 			})
 		}
 
@@ -199,15 +198,36 @@ func (s *S3StorageInteractor) MoveObject(from string, to string) error {
 	}
 	ylogger.Zero.Debug().Str("", out.GoString()).Msg("copied object")
 
-	input2 := s3.DeleteObjectInput{
-		Bucket: &s.cnf.StorageBucket,
-		Key:    aws.String(fromPath),
-	}
-
-	_, err = sess.DeleteObject(&input2)
+	err = s.DeleteObject(fromPath)
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to delete old object")
 	}
 	ylogger.Zero.Debug().Msg("deleted object")
 	return err
+}
+
+func (s *S3StorageInteractor) DeleteObject(key string) error {
+	sess, err := s.pool.GetSession(context.TODO())
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
+		return err
+	}
+	ylogger.Zero.Debug().Msg("aquired session")
+
+	if !strings.HasPrefix(key, s.cnf.StoragePrefix) {
+		key = path.Join(s.cnf.StoragePrefix, key)
+	}
+
+	input2 := s3.DeleteObjectInput{
+		Bucket: &s.cnf.StorageBucket,
+		Key:    aws.String(key),
+	}
+
+	_, err = sess.DeleteObject(&input2)
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to delete old object")
+		return err
+	}
+	ylogger.Zero.Debug().Msg("deleted object")
+	return nil
 }
