@@ -181,7 +181,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		const chunkSize = 1000
 
 		for i := 0; i < len(objectMetas); i += chunkSize {
-			_, err = ycl.GetRW().Write(message.NewObjectMetaMessage(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
+			_, err = ycl.GetRW().Write(message.NewFilesInfo(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to upload")
 
@@ -221,7 +221,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			return nil
 		}
 
-		var failed []*storage.S3ObjectMeta
+		var failed []*storage.FileInfo
 		retryCount := 0
 		for len(objectMetas) > 0 && retryCount < 10 {
 			retryCount++
@@ -294,7 +294,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			}
 			objectMetas = failed
 			fmt.Printf("failed files count: %d\n", len(objectMetas))
-			failed = make([]*storage.S3ObjectMeta, 0)
+			failed = make([]*storage.FileInfo, 0)
 		}
 
 		if len(objectMetas) > 0 {

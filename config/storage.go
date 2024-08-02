@@ -16,4 +16,7 @@ type Storage struct {
 	StorageConcurrency int64 `json:"storage_concurrency" toml:"storage_concurrency" yaml:"storage_concurrency"`
 
 	StorageRegion string `json:"storage_region" toml:"storage_region" yaml:"storage_region"`
+
+	IsLocal      string `json:"is_local" toml:"is_local" yaml:"is_local"`
+	PathToFolder string `json:"path_to_folder" toml:"path_to_folder" yaml:"path_to_folder"`
 }

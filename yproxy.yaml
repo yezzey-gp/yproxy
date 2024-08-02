@@ -1,0 +1,16 @@
+socket_path: "/tmp/yproxy.sock"
+
+storage:
+  # S3 data for Yandex Cloud
+  access_key_id: "YCBpaste_your_key"
+  secret_access_key: "YCP-paste_your_key"
+  storage_endpoint: "https://storage.yandexcloud.net"
+  storage_prefix: "wal-e/6/"
+  storage_region: "us-west-2"
+  storage_bucket: "your_s3_bucket"
+  # Used to use the file system instead of s3
+  # "true" - we use it, otherwise we don't use it
+  # DON'T USE IN PRODUCTION
+  is_local: "false"
+  # The path to the folder to be used as local s3
+  path_to_folder: "/home/user/s3"

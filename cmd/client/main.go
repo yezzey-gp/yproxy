@@ -23,6 +23,178 @@ var decrypt bool
 var encrypt bool
 var offset uint64
 
+// TODOV
+func Prepare(f func(net.Conn, *config.Instance, []string) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		err := config.LoadInstanceConfig(cfgPath)
+		if err != nil {
+			return err
+		}
+
+		instanceCnf := config.InstanceConfig()
+
+		con, err := net.Dial("unix", instanceCnf.SocketPath)
+
+		if err != nil {
+			return err
+		}
+
+		defer con.Close()
+		return f(con, instanceCnf, args)
+	}
+}
+
+func catFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
+	msg := message.NewCatMessage(args[0], decrypt, offset).Encode()
+	_, err := con.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed cat message")
+
+	_, err = io.Copy(os.Stdout, con)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func copyFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
+	ylogger.Zero.Info().Msg("Execute copy command")
+	ylogger.Zero.Info().Str("name", args[0]).Msg("copy")
+	msg := message.NewCopyMessage(args[0], oldCfgPath, encrypt, decrypt).Encode()
+	_, err := con.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed copy msg")
+
+	client := client.NewYClient(con)
+	protoReader := proc.NewProtoReader(client)
+
+	ansType, body, err := protoReader.ReadPacket()
+	if err != nil {
+		ylogger.Zero.Debug().Err(err).Msg("error while ans")
+		return err
+	}
+
+	if ansType != message.MessageTypeReadyForQuery {
+		return fmt.Errorf("failed to copy, msg: %v", body)
+	}
+	return nil
+}
+
+func putFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
+	ycl := client.NewYClient(con)
+	r := proc.NewProtoReader(ycl)
+
+	msg := message.NewPutMessage(args[0], encrypt).Encode()
+	_, err := con.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed put message")
+
+	const SZ = 65536
+	chunk := make([]byte, SZ)
+	for {
+		n, err := os.Stdin.Read(chunk)
+		if n > 0 {
+			msg := message.NewCopyDataMessage()
+			msg.Sz = uint64(n)
+			msg.Data = make([]byte, msg.Sz)
+			copy(msg.Data, chunk[:n])
+
+			nwr, err := con.Write(msg.Encode())
+			if err != nil {
+				return err
+			}
+
+			ylogger.Zero.Debug().Int("len", nwr).Msg("written copy data msg")
+		}
+
+		if err == nil {
+			continue
+		}
+		if err == io.EOF {
+			break
+		} else {
+			return err
+		}
+	}
+
+	ylogger.Zero.Debug().Msg("send command complete msg")
+
+	msg = message.NewCommandCompleteMessage().Encode()
+	_, err = con.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	tp, _, err := r.ReadPacket()
+	if err != nil {
+		return err
+	}
+
+	if tp == message.MessageTypeReadyForQuery {
+		// ok
+
+		ylogger.Zero.Debug().Msg("got rfq")
+	} else {
+		return fmt.Errorf("failed to get rfq")
+	}
+	return nil
+
+}
+
+func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
+	msg := message.NewListMessage(args[0]).Encode()
+	_, err := con.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed list message")
+
+	ycl := client.NewYClient(con)
+	r := proc.NewProtoReader(ycl)
+
+	done := false
+	res := make([]*storage.FileInfo, 0)
+	for {
+		if done {
+			break
+		}
+		tp, body, err := r.ReadPacket()
+		if err != nil {
+			return err
+		}
+
+		switch tp {
+		case message.MessageTypeObjectMeta:
+			meta := message.FilesInfo{}
+			meta.Decode(body)
+
+			res = append(res, meta.Content...)
+			break
+		case message.MessageTypeReadyForQuery:
+			done = true
+			break
+		default:
+			return fmt.Errorf("Incorrect message type: %s", tp.String())
+		}
+	}
+
+	for _, meta := range res {
+		fmt.Printf("Object: {Name: \"%s\", size: %d}\n", meta.Path, meta.Size)
+	}
+	return nil
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "",
 	Short: "",
@@ -31,227 +203,25 @@ var rootCmd = &cobra.Command{
 var catCmd = &cobra.Command{
 	Use:   "cat",
 	Short: "cat",
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		err := config.LoadInstanceConfig(cfgPath)
-		if err != nil {
-			return err
-		}
-
-		instanceCnf := config.InstanceConfig()
-
-		con, err := net.Dial("unix", instanceCnf.SocketPath)
-
-		if err != nil {
-			return err
-		}
-
-		defer con.Close()
-		msg := message.NewCatMessage(args[0], decrypt, offset).Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
-
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed cat message")
-
-		_, err = io.Copy(os.Stdout, con)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	},
+	RunE:  Prepare(catFunc),
 }
 
 var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "copy",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ylogger.Zero.Info().Msg("Execute copy command")
-		err := config.LoadInstanceConfig(cfgPath)
-		if err != nil {
-			return err
-		}
-		instanceCnf := config.InstanceConfig()
-
-		con, err := net.Dial("unix", instanceCnf.SocketPath)
-		if err != nil {
-			return err
-		}
-
-		defer con.Close()
-		ylogger.Zero.Info().Str("name", args[0]).Msg("copy")
-		msg := message.NewCopyMessage(args[0], oldCfgPath, encrypt, decrypt).Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
-
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed copy msg")
-
-		client := client.NewYClient(con)
-		protoReader := proc.NewProtoReader(client)
-
-		ansType, body, err := protoReader.ReadPacket()
-		if err != nil {
-			ylogger.Zero.Debug().Err(err).Msg("error while ans")
-			return err
-		}
-
-		if ansType != message.MessageTypeReadyForQuery {
-			return fmt.Errorf("failed to copy, msg: %v", body)
-		}
-
-		return nil
-	},
+	RunE:  Prepare(copyFunc),
 }
 
 var putCmd = &cobra.Command{
 	Use:   "put",
 	Short: "put",
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		err := config.LoadInstanceConfig(cfgPath)
-		if err != nil {
-			return err
-		}
-
-		instanceCnf := config.InstanceConfig()
-
-		con, err := net.Dial("unix", instanceCnf.SocketPath)
-
-		if err != nil {
-			return err
-		}
-
-		ycl := client.NewYClient(con)
-		r := proc.NewProtoReader(ycl)
-
-		defer con.Close()
-		msg := message.NewPutMessage(args[0], encrypt).Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
-
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed put message")
-
-		const SZ = 65536
-		chunk := make([]byte, SZ)
-		for {
-			n, err := os.Stdin.Read(chunk)
-			if n > 0 {
-				msg := message.NewCopyDataMessage()
-				msg.Sz = uint64(n)
-				msg.Data = make([]byte, msg.Sz)
-				copy(msg.Data, chunk[:n])
-
-				nwr, err := con.Write(msg.Encode())
-				if err != nil {
-					return err
-				}
-
-				ylogger.Zero.Debug().Int("len", nwr).Msg("written copy data msg")
-			}
-
-			if err == nil {
-				continue
-			}
-			if err == io.EOF {
-				break
-			} else {
-				return err
-			}
-		}
-
-		ylogger.Zero.Debug().Msg("send command complete msg")
-
-		msg = message.NewCommandCompleteMessage().Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
-
-		tp, _, err := r.ReadPacket()
-		if err != nil {
-			return err
-		}
-
-		if tp == message.MessageTypeReadyForQuery {
-			// ok
-
-			ylogger.Zero.Debug().Msg("got rfq")
-		} else {
-			return fmt.Errorf("failed to get rfq")
-		}
-
-		return nil
-	},
+	RunE:  Prepare(putFunc),
 }
 
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list",
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		err := config.LoadInstanceConfig(cfgPath)
-		if err != nil {
-			return err
-		}
-
-		instanceCnf := config.InstanceConfig()
-
-		con, err := net.Dial("unix", instanceCnf.SocketPath)
-
-		if err != nil {
-			return err
-		}
-
-		defer con.Close()
-		msg := message.NewListMessage(args[0]).Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
-
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed list message")
-
-		ycl := client.NewYClient(con)
-		r := proc.NewProtoReader(ycl)
-
-		done := false
-		res := make([]*storage.S3ObjectMeta, 0)
-		for {
-			if done {
-				break
-			}
-			tp, body, err := r.ReadPacket()
-			if err != nil {
-				return err
-			}
-
-			switch tp {
-			case message.MessageTypeObjectMeta:
-				meta := message.ObjectMetaMessage{}
-				meta.Decode(body)
-
-				res = append(res, meta.Content...)
-				break
-			case message.MessageTypeReadyForQuery:
-				done = true
-				break
-			default:
-				return fmt.Errorf("Incorrect message type: %s", tp.String())
-			}
-		}
-
-		for _, meta := range res {
-			fmt.Printf("Object: {Name: \"%s\", size: %d}\n", meta.Path, meta.Size)
-		}
-
-		return nil
-	},
+	RunE:  Prepare(listFunc),
 }
 
 func init() {
