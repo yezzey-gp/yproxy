@@ -164,7 +164,7 @@ func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 	r := proc.NewProtoReader(ycl)
 
 	done := false
-	res := make([]*storage.FileInfo, 0)
+	res := make([]*storage.ObjectInfo, 0)
 	for {
 		if done {
 			break
@@ -176,7 +176,7 @@ func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 
 		switch tp {
 		case message.MessageTypeObjectMeta:
-			meta := message.FilesInfo{}
+			meta := message.ObjectMetaMessage{}
 			meta.Decode(body)
 
 			res = append(res, meta.Content...)

@@ -23,8 +23,8 @@ func (s *FileStorageInteractor) CatFileFromStorage(name string, offset int64) (i
 	_, err = io.CopyN(io.Discard, file, offset)
 	return file, err
 }
-func (s *FileStorageInteractor) ListPath(prefix string) ([]*FileInfo, error) {
-	var data []*FileInfo
+func (s *FileStorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
+	var data []*ObjectInfo
 	err := filepath.WalkDir(s.cnf.PathToFolder, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -36,11 +36,11 @@ func (s *FileStorageInteractor) ListPath(prefix string) ([]*FileInfo, error) {
 		if err != nil {
 			return err
 		}
-		fileinfo, err := file.Stat()
+		ObjectInfo, err := file.Stat()
 		if err != nil {
 			return err
 		}
-		data = append(data, &FileInfo{fileinfo.Name(), fileinfo.Size()})
+		data = append(data, &ObjectInfo{ObjectInfo.Name(), ObjectInfo.Size()})
 		return nil
 	})
 	return data, err

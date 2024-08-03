@@ -16,7 +16,7 @@ type StorageWriter interface {
 }
 
 type StorageLister interface {
-	ListPath(prefix string) ([]*FileInfo, error)
+	ListPath(prefix string) ([]*ObjectInfo, error)
 }
 
 type StorageInteractor interface {

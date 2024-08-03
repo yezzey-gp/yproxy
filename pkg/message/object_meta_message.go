@@ -7,19 +7,19 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 )
 
-type FilesInfo struct {
-	Content []*storage.FileInfo
+type ObjectMetaMessage struct {
+	Content []*storage.ObjectInfo
 }
 
-var _ ProtoMessage = &FilesInfo{}
+var _ ProtoMessage = &ObjectMetaMessage{}
 
-func NewFilesInfo(content []*storage.FileInfo) *FilesInfo {
-	return &FilesInfo{
+func NewObjectMetaMessage(content []*storage.ObjectInfo) *ObjectMetaMessage {
+	return &ObjectMetaMessage{
 		Content: content,
 	}
 }
 
-func (c *FilesInfo) Encode() []byte {
+func (c *ObjectMetaMessage) Encode() []byte {
 	bt := []byte{
 		byte(MessageTypeObjectMeta),
 		0,
@@ -42,14 +42,14 @@ func (c *FilesInfo) Encode() []byte {
 	return append(bs, bt...)
 }
 
-func (c *FilesInfo) Decode(body []byte) {
+func (c *ObjectMetaMessage) Decode(body []byte) {
 	body = body[4:]
-	c.Content = make([]*storage.FileInfo, 0)
+	c.Content = make([]*storage.ObjectInfo, 0)
 	for len(body) > 0 {
 		name, index := c.GetString(body)
 		size := int64(binary.BigEndian.Uint64(body[index : index+8]))
 
-		c.Content = append(c.Content, &storage.FileInfo{
+		c.Content = append(c.Content, &storage.ObjectInfo{
 			Path: name,
 			Size: size,
 		})
@@ -57,7 +57,7 @@ func (c *FilesInfo) Decode(body []byte) {
 	}
 }
 
-func (c *FilesInfo) GetString(b []byte) (string, int) {
+func (c *ObjectMetaMessage) GetString(b []byte) (string, int) {
 	buff := bytes.NewBufferString("")
 
 	i := 0

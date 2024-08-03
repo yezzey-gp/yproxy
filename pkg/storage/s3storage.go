@@ -93,12 +93,12 @@ func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffst
 	return err
 }
 
-type FileInfo struct {
+type ObjectInfo struct {
 	Path string
 	Size int64
 }
 
-func (s *S3StorageInteractor) ListPath(prefix string) ([]*FileInfo, error) {
+func (s *S3StorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
@@ -107,7 +107,7 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*FileInfo, error) {
 
 	var continuationToken *string
 	prefix = path.Join(s.cnf.StoragePrefix, prefix)
-	metas := make([]*FileInfo, 0)
+	metas := make([]*ObjectInfo, 0)
 
 	for {
 		input := &s3.ListObjectsV2Input{
@@ -122,7 +122,7 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*FileInfo, error) {
 		}
 
 		for _, obj := range out.Contents {
-			metas = append(metas, &FileInfo{
+			metas = append(metas, &ObjectInfo{
 				Path: *obj.Key,
 				Size: *obj.Size,
 			})
