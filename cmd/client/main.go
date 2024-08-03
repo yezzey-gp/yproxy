@@ -176,7 +176,7 @@ func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 
 		switch tp {
 		case message.MessageTypeObjectMeta:
-			meta := message.ObjectMetaMessage{}
+			meta := message.ObjectInfoMessage{}
 			meta.Decode(body)
 
 			res = append(res, meta.Content...)
