@@ -26,14 +26,8 @@ type StorageInteractor interface {
 }
 
 func NewStorage(cnf *config.Storage) StorageInteractor {
-	if cnf.IsLocal == "True" {
-		return &FileStorageInteractor{
-			cnf: cnf,
-		}
-	} else {
-		return &S3StorageInteractor{
-			pool: NewSessionPool(cnf),
-			cnf:  cnf,
-		}
+	return &S3StorageInteractor{
+		pool: NewSessionPool(cnf),
+		cnf:  cnf,
 	}
 }

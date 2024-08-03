@@ -8,9 +8,3 @@ storage:
   storage_prefix: "wal-e/6/"
   storage_region: "us-west-2"
   storage_bucket: "your_s3_bucket"
-  # Used to use the file system instead of s3
-  # "true" - we use it, otherwise we don't use it
-  # DON'T USE IN PRODUCTION
-  is_local: "false"
-  # The path to the folder to be used as local s3
-  path_to_folder: "/home/user/s3"
