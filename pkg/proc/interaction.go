@@ -221,7 +221,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			return nil
 		}
 
-		var failed []*storage.S3ObjectMeta
+		var failed []*storage.ObjectInfo
 		retryCount := 0
 		for len(objectMetas) > 0 && retryCount < 10 {
 			retryCount++
@@ -294,7 +294,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			}
 			objectMetas = failed
 			fmt.Printf("failed files count: %d\n", len(objectMetas))
-			failed = make([]*storage.S3ObjectMeta, 0)
+			failed = make([]*storage.ObjectInfo, 0)
 		}
 
 		if len(objectMetas) > 0 {
