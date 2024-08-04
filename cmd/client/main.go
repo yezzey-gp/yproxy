@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/yezzey-gp/yproxy/pkg/storage"
-	"github.com/yezzey-gp/yproxy/pkg/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
@@ -25,14 +24,11 @@ var encrypt bool
 var offset uint64
 
 // TODOV
-func Runner(f func(net.Conn, *config.Instance, []string) error, argChecker func([]string) error) func(*cobra.Command, []string) error {
+func Runner(f func(net.Conn, *config.Instance, []string) error) func(*cobra.Command, []string) error {
 
 	return func(cmd *cobra.Command, args []string) error {
-		err := argChecker(args)
-		if err != nil {
-			return err
-		}
-		err = config.LoadInstanceConfig(cfgPath)
+
+		err := config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
 		}
@@ -206,25 +202,29 @@ var rootCmd = &cobra.Command{
 var catCmd = &cobra.Command{
 	Use:   "cat",
 	Short: "cat",
-	RunE:  Runner(catFunc, utils.OneArg),
+	Args:  cobra.ExactArgs(1),
+	RunE:  Runner(catFunc),
 }
 
 var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "copy",
-	RunE:  Runner(copyFunc, utils.OneArg),
+	Args:  cobra.ExactArgs(1),
+	RunE:  Runner(copyFunc),
 }
 
 var putCmd = &cobra.Command{
 	Use:   "put",
 	Short: "put",
-	RunE:  Runner(putFunc, utils.OneArg),
+	Args:  cobra.ExactArgs(1),
+	RunE:  Runner(putFunc),
 }
 
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list",
-	RunE:  Runner(listFunc, utils.OneArg),
+	Args:  cobra.ExactArgs(1),
+	RunE:  Runner(listFunc),
 }
 
 func init() {
