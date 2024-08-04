@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/yezzey-gp/yproxy/pkg/storage"
+	"github.com/yezzey-gp/yproxy/pkg/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
@@ -24,9 +25,14 @@ var encrypt bool
 var offset uint64
 
 // TODOV
-func Prepare(f func(net.Conn, *config.Instance, []string) error) func(*cobra.Command, []string) error {
+func Runner(f func(net.Conn, *config.Instance, []string) error, argChecker func([]string) error) func(*cobra.Command, []string) error {
+
 	return func(cmd *cobra.Command, args []string) error {
-		err := config.LoadInstanceConfig(cfgPath)
+		err := argChecker(args)
+		if err != nil {
+			return err
+		}
+		err = config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
 		}
@@ -141,14 +147,11 @@ func putFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 	}
 
 	if tp == message.MessageTypeReadyForQuery {
-		// ok
-
 		ylogger.Zero.Debug().Msg("got rfq")
+		return nil
 	} else {
 		return fmt.Errorf("failed to get rfq")
 	}
-	return nil
-
 }
 
 func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
@@ -203,25 +206,25 @@ var rootCmd = &cobra.Command{
 var catCmd = &cobra.Command{
 	Use:   "cat",
 	Short: "cat",
-	RunE:  Prepare(catFunc),
+	RunE:  Runner(catFunc, utils.OneArg),
 }
 
 var copyCmd = &cobra.Command{
 	Use:   "copy",
 	Short: "copy",
-	RunE:  Prepare(copyFunc),
+	RunE:  Runner(copyFunc, utils.OneArg),
 }
 
 var putCmd = &cobra.Command{
 	Use:   "put",
 	Short: "put",
-	RunE:  Prepare(putFunc),
+	RunE:  Runner(putFunc, utils.OneArg),
 }
 
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list",
-	RunE:  Prepare(listFunc),
+	RunE:  Runner(listFunc, utils.OneArg),
 }
 
 func init() {
