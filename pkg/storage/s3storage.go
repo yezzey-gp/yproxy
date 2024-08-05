@@ -69,7 +69,7 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader) error {
 	return err
 }
 
-func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffste int64) error {
+func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffset int64) error {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
@@ -82,7 +82,7 @@ func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffst
 		Bucket:       &s.cnf.StorageBucket,
 		Key:          aws.String(objectPath),
 		Body:         r,
-		ContentRange: aws.String(fmt.Sprintf("bytes %d-18446744073709551615", startOffste)),
+		ContentRange: aws.String(fmt.Sprintf("bytes %d-18446744073709551615", startOffset)),
 	}
 
 	_, err = sess.PatchObject(input)
