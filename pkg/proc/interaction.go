@@ -211,7 +211,10 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			return nil
 		}
 		config.EmbedDefaults(&instanceCnf)
-		oldStorage := storage.NewStorage(&instanceCnf.StorageCnf)
+		oldStorage, err := storage.NewStorage(&instanceCnf.StorageCnf)
+		if err != nil {
+			return err
+		}
 		fmt.Printf("ok new conf: %v\n", instanceCnf)
 
 		//list objects

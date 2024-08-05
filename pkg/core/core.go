@@ -116,10 +116,12 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		return err
 	}
 
-	s := storage.NewStorage(
+	s, err := storage.NewStorage(
 		&instanceCnf.StorageCnf,
 	)
-
+	if err != nil {
+		return err
+	}
 	var cr crypt.Crypter = nil
 	if instanceCnf.CryptoCnf.GPGKeyPath != "" {
 		cr, err = crypt.NewCrypto(&instanceCnf.CryptoCnf)

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/yezzey-gp/yproxy/config"
@@ -30,16 +31,18 @@ type StorageInteractor interface {
 	StorageMover
 }
 
-func NewStorage(cnf *config.Storage) StorageInteractor {
+func NewStorage(cnf *config.Storage) (StorageInteractor, error) {
 	switch cnf.StorageType {
 	case "fs":
 		return &FileStorageInteractor{
 			cnf: cnf,
-		}
-	default:
+		}, nil
+	case "s3":
 		return &S3StorageInteractor{
 			pool: NewSessionPool(cnf),
 			cnf:  cnf,
-		}
+		}, nil
+	default:
+		return nil, fmt.Errorf("wrong storage type " + cnf.StorageType)
 	}
 }
