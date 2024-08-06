@@ -16,4 +16,7 @@ type Storage struct {
 	StorageConcurrency int64 `json:"storage_concurrency" toml:"storage_concurrency" yaml:"storage_concurrency"`
 
 	StorageRegion string `json:"storage_region" toml:"storage_region" yaml:"storage_region"`
+
+	// File storage default s3. Available: s3, fs
+	StorageType string `json:"storage_type" toml:"storage_type" yaml:"storage_type"`
 }

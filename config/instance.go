@@ -64,6 +64,9 @@ const (
 )
 
 func EmbedDefaults(cfgInstance *Instance) {
+	if cfgInstance.StorageCnf.StorageType == "" {
+		cfgInstance.StorageCnf.StorageType = "s3"
+	}
 	if cfgInstance.StorageCnf.StorageConcurrency == 0 {
 		cfgInstance.StorageCnf.StorageConcurrency = DefaultStorageConcurrency
 	}
