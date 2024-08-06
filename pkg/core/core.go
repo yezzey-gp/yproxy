@@ -13,6 +13,7 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/clientpool"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
+	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/sdnotifier"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
@@ -55,6 +56,8 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 
 	go func() {
 		defer os.Remove(instanceCnf.SocketPath)
+
+		defer os.Remove(instanceCnf.InterconnectSocketPath)
 		defer cancelCtx()
 
 		for {
@@ -109,6 +112,50 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 
 		i.DispatchServer(psqlListener, PostgresIface)
 	}
+
+	/* dispatch statistic server */
+	go func() {
+
+		listener, err := net.Listen("unix", instanceCnf.InterconnectSocketPath)
+
+		ylogger.Zero.Debug().Msg("try to start interconnect socket listener")
+		if err != nil {
+			ylogger.Zero.Error().Err(err).Msg("failed to start interconnect socket listener")
+			return
+		}
+		defer listener.Close()
+
+		for {
+			clConn, err := listener.Accept()
+			if err != nil {
+				ylogger.Zero.Error().Err(err).Msg("failed to accept interconnection")
+				continue
+			}
+			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client interconnection")
+
+			ycl := client.NewYClient(clConn)
+			r := proc.NewProtoReader(ycl)
+
+			mt, _, err := r.ReadPacket()
+
+			if err != nil {
+				ylogger.Zero.Error().Err(err).Msg("failed to accept interconnection")
+				continue
+			}
+
+			switch mt {
+			case message.MessageTypeGool:
+				msg := message.ReadyForQueryMessage{}
+				_, _ = ycl.GetRW().Write(msg.Encode())
+			default:
+				ycl.ReplyError(fmt.Errorf("wrong message type"), "")
+
+			}
+
+			clConn.Close()
+			ylogger.Zero.Debug().Msg("interconnection closed")
+		}
+	}()
 
 	listener, err := net.Listen("unix", instanceCnf.SocketPath)
 	if err != nil {

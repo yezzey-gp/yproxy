@@ -357,6 +357,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		if !msg.Confirm {
 			ylogger.Zero.Warn().Msg("It was a dry-run, nothing was deleted")
 		}
+	case message.MessageTypeGool:
+		return ProcMotion(s, cr, ycl)
 
 	default:
 		ylogger.Zero.Error().Any("type", tp).Msg("unknown message type")
@@ -365,5 +367,34 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		return nil
 	}
 
+	return nil
+}
+
+func ProcMotion(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
+
+	defer func() {
+		_ = ycl.Close()
+	}()
+
+	pr := NewProtoReader(ycl)
+	tp, body, err := pr.ReadPacket()
+	if err != nil {
+		_ = ycl.ReplyError(err, "failed to read request packet")
+		return err
+	}
+
+	ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
+
+	ycl.SetOPType(byte(tp))
+
+	msg := message.GoolMessage{}
+	msg.Decode(body)
+
+	ylogger.Zero.Info().Msg("recieved client gool succ")
+
+	_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
+	if err != nil {
+		_ = ycl.ReplyError(err, "failed to gool")
+	}
 	return nil
 }

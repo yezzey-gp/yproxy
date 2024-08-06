@@ -20,6 +20,7 @@ const (
 	MessageTypeObjectMeta      = MessageType(49)
 	MessageTypePatch           = MessageType(50)
 	MessageTypeCopy            = MessageType(51)
+	MessageTypeGool            = MessageType(52)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)
@@ -50,6 +51,8 @@ func (m MessageType) String() string {
 		return "OBJECT META"
 	case MessageTypeCopy:
 		return "COPY"
+	case MessageTypeGool:
+		return "GOOL"
 	}
 	return "UNKNOWN"
 }
