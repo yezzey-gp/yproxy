@@ -24,6 +24,8 @@ type StorageMover interface {
 	MoveObject(from string, to string) error
 	DeleteObject(key string) error
 }
+
+//go:generate mockgen -destination=pkg/mock/storage.go -package=mock
 type StorageInteractor interface {
 	StorageReader
 	StorageWriter

@@ -7,8 +7,10 @@ import (
 	"sync"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/backups"
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
+	"github.com/yezzey-gp/yproxy/pkg/database"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
@@ -230,7 +232,6 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			retryCount++
 			for i := 0; i < len(objectMetas); i++ {
 				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
-
 				//get reader
 				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path))
 				var fromReader io.Reader
@@ -317,8 +318,48 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		fmt.Println("Copy finished successfully")
 		ylogger.Zero.Info().Msg("Copy finished successfully")
 
+	case message.MessageTypeDelete:
+		//recieve message
+		msg := message.DeleteMessage{}
+		msg.Decode(body)
+
+		ycl.SetExternalFilePath(msg.Name)
+
+		dbInterractor := &database.DatabaseHandler{}
+		backupHandler := &backups.WalgBackupInterractor{}
+
+		var dh DeleteHandler
+		dh = &BasicDeleteHandler{
+			StorageInterractor: s,
+			DbInterractor:      dbInterractor,
+			BackupInterractor:  backupHandler,
+		}
+
+		if msg.Garbage {
+			err = dh.HandleDeleteGarbage(msg)
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to finish operation")
+				return nil
+			}
+		} else {
+			err = dh.HandleDeleteFile(msg)
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to finish operation")
+				return nil
+			}
+		}
+
+		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+			return nil
+		}
+		ylogger.Zero.Info().Msg("Deleted garbage successfully")
+		if !msg.Confirm {
+			ylogger.Zero.Warn().Msg("It was a dry-run, nothing was deleted")
+		}
+
 	default:
-		ylogger.Zero.Error().Any("type", tp).Msg("what type is it")
+		ylogger.Zero.Error().Any("type", tp).Msg("unknown message type")
 		_ = ycl.ReplyError(nil, "wrong request type")
 
 		return nil
