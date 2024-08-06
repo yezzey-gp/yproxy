@@ -272,6 +272,62 @@ var listCmd = &cobra.Command{
 	RunE:  Runner(listFunc),
 }
 
+var goolCmd = &cobra.Command{
+	Use:   "gool",
+	Short: "gool",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		err := config.LoadInstanceConfig(cfgPath)
+		if err != nil {
+			ylogger.Zero.Debug().Err(err)
+			return err
+		}
+
+		instanceCnf := config.InstanceConfig()
+
+		con, err := net.Dial("unix", instanceCnf.InterconnectSocketPath)
+
+		if err != nil {
+			ylogger.Zero.Debug().Err(err)
+			return err
+		}
+
+		defer con.Close()
+		msg := message.NewGoolMessage(args[0]).Encode()
+		_, err = con.Write(msg)
+		if err != nil {
+			ylogger.Zero.Debug().Err(err)
+			return err
+		}
+
+		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed gool message")
+
+		ycl := client.NewYClient(con)
+		r := proc.NewProtoReader(ycl)
+
+		done := false
+		for {
+			if done {
+				break
+			}
+			tp, _, err := r.ReadPacket()
+			if err != nil {
+				return err
+			}
+
+			switch tp {
+			case message.MessageTypeReadyForQuery:
+				ylogger.Zero.Debug().Bytes("msg", msg).Msg("got RFQ message")
+				done = true
+			default:
+				return fmt.Errorf("incorrect gool")
+			}
+		}
+
+		return nil
+	},
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", "/etc/yproxy/yproxy.yaml", "path to yproxy config file")
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "", "log level")
@@ -289,12 +345,14 @@ func init() {
 	rootCmd.AddCommand(putCmd)
 
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(goolCmd)
 
 	deleteCmd.PersistentFlags().IntVarP(&segmentPort, "port", "p", 6000, "port that segment is listening on")
 	deleteCmd.PersistentFlags().IntVarP(&segmentNum, "segnum", "s", 0, "logical number of a segment")
 	deleteCmd.PersistentFlags().BoolVarP(&confirm, "confirm", "", false, "confirm deletion")
 	deleteCmd.PersistentFlags().BoolVarP(&garbage, "garbage", "g", false, "delete garbage")
 	rootCmd.AddCommand(deleteCmd)
+
 }
 
 func main() {
