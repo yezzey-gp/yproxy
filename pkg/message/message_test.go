@@ -185,7 +185,7 @@ func TestCopyMsg(t *testing.T) {
 func TestDeleteMsg(t *testing.T) {
 	assert := assert.New(t)
 
-	msg := message.NewDeleteMessage("myname/mynextname", 5432, 42, true)
+	msg := message.NewDeleteMessage("myname/mynextname", 5432, 42, true, true)
 	body := msg.Encode()
 
 	assert.Equal(body[8], byte(message.MessageTypeDelete))
@@ -197,4 +197,5 @@ func TestDeleteMsg(t *testing.T) {
 	assert.Equal(5432, msg2.Port)
 	assert.Equal(42, msg2.Segnum)
 	assert.True(msg2.Confirm)
+	assert.True(msg2.Garbage)
 }

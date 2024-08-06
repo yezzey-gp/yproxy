@@ -19,7 +19,7 @@ type BackupInterractor interface {
 	GetFirstLSN(int) (uint64, error)
 }
 
-type WalgBackupInterractor struct {
+type WalgBackupInterractor struct { //TODO: rewrite to using s3 instead of wal-g cmd
 }
 
 // get lsn of the oldest backup
@@ -34,29 +34,29 @@ func (b *WalgBackupInterractor) GetFirstLSN(seg int) (uint64, error) {
 		ylogger.Zero.Debug().AnErr("error", err).Msg("Failed to run st ls")
 		return 0, err
 	}
-	p1 := strings.Split(out.String(), "\n")
+	lines := strings.Split(out.String(), "\n")
 
 	minLSN := BackupLSN{Lsn: ^uint64(0)}
-	for _, line := range p1 {
+	for _, line := range lines {
 		if !strings.Contains(line, ".json") {
 			continue
 		}
-		p2 := strings.Split(line, " ")
-		p3 := p2[len(p2)-1]
+		parts := strings.Split(line, " ")
+		fileName := parts[len(parts)-1]
 
-		ylogger.Zero.Debug().Str("file: %s", fmt.Sprintf("segments_005/seg%d/basebackups_005/%s", seg, p3)).Msg("check lsn in file")
-		cmd2 := exec.Command("/usr/bin/wal-g", "st", "cat", fmt.Sprintf("segments_005/seg%d/basebackups_005/%s", seg, p3), "--config=/etc/wal-g/wal-g.yaml")
+		ylogger.Zero.Debug().Str("file: %s", fmt.Sprintf("segments_005/seg%d/basebackups_005/%s", seg, fileName)).Msg("check lsn in file")
+		catCmd := exec.Command("/usr/bin/wal-g", "st", "cat", fmt.Sprintf("segments_005/seg%d/basebackups_005/%s", seg, fileName), "--config=/etc/wal-g/wal-g.yaml")
 
-		var out2 bytes.Buffer
-		cmd2.Stdout = &out2
+		var catOut bytes.Buffer
+		catCmd.Stdout = &catOut
 
-		err = cmd2.Run()
+		err = catCmd.Run()
 		if err != nil {
 			ylogger.Zero.Debug().AnErr("error", err).Msg("Failed to run st cat")
 			return 0, err
 		}
 		lsn := BackupLSN{}
-		err = json.Unmarshal(out2.Bytes(), &lsn)
+		err = json.Unmarshal(catOut.Bytes(), &lsn)
 
 		if lsn.Lsn < minLSN.Lsn {
 			minLSN.Lsn = lsn.Lsn

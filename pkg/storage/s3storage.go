@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/yezzey-gp/aws-sdk-go/aws"
 	"github.com/yezzey-gp/aws-sdk-go/service/s3"
@@ -135,4 +136,30 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
 		continuationToken = out.NextContinuationToken
 	}
 	return metas, nil
+}
+
+func (s *S3StorageInteractor) DeleteObject(key string) error {
+	sess, err := s.pool.GetSession(context.TODO())
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
+		return err
+	}
+	ylogger.Zero.Debug().Msg("aquired session")
+
+	if !strings.HasPrefix(key, s.cnf.StoragePrefix) {
+		key = path.Join(s.cnf.StoragePrefix, key)
+	}
+
+	input2 := s3.DeleteObjectInput{
+		Bucket: &s.cnf.StorageBucket,
+		Key:    aws.String(key),
+	}
+
+	_, err = sess.DeleteObject(&input2)
+	if err != nil {
+		ylogger.Zero.Err(err).Msg("failed to delete old object")
+		return err
+	}
+	ylogger.Zero.Debug().Msg("deleted object")
+	return nil
 }

@@ -10,16 +10,18 @@ type DeleteMessage struct { //seg port
 	Port    int
 	Segnum  int
 	Confirm bool
+	Garbage bool
 }
 
 var _ ProtoMessage = &DeleteMessage{}
 
-func NewDeleteMessage(name string, port int, seg int, confirm bool) *DeleteMessage {
+func NewDeleteMessage(name string, port int, seg int, confirm bool, garbage bool) *DeleteMessage {
 	return &DeleteMessage{
 		Name:    name,
 		Port:    port,
 		Segnum:  seg,
 		Confirm: confirm,
+		Garbage: garbage,
 	}
 }
 
@@ -33,6 +35,9 @@ func (c *DeleteMessage) Encode() []byte {
 
 	if c.Confirm {
 		bt[1] = 1
+	}
+	if c.Garbage {
+		bt[2] = 1
 	}
 
 	bt = append(bt, []byte(c.Name)...)
@@ -55,6 +60,9 @@ func (c *DeleteMessage) Encode() []byte {
 func (c *DeleteMessage) Decode(body []byte) {
 	if body[1] == 1 {
 		c.Confirm = true
+	}
+	if body[2] == 1 {
+		c.Garbage = true
 	}
 	c.Name = c.GetDeleteName(body[4:])
 	c.Port = int(binary.BigEndian.Uint64(body[len(body)-16 : len(body)-8]))

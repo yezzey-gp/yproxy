@@ -60,7 +60,7 @@ func TestFilesToDeletion(t *testing.T) {
 		Confirm: false,
 	}
 
-	filesInStorage := []*storage.S3ObjectMeta{
+	filesInStorage := []*storage.ObjectInfo{
 		{Path: "1663_16530_not-deleted_18002_"},
 		{Path: "1663_16530_deleted-after-backup_18002_"},
 		{Path: "1663_16530_deleted-when-backup-start_18002_"},

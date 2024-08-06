@@ -25,6 +25,7 @@ var offset uint64
 var segmentPort int
 var segmentNum int
 var confirm bool
+var garbage bool
 
 // TODOV
 func Runner(f func(net.Conn, *config.Instance, []string) error) func(*cobra.Command, []string) error {
@@ -182,12 +183,10 @@ func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 			meta.Decode(body)
 
 			res = append(res, meta.Content...)
-			break
 		case message.MessageTypeReadyForQuery:
 			done = true
-			break
 		default:
-			return fmt.Errorf("Incorrect message type: %s", tp.String())
+			return fmt.Errorf("incorrect message type: %s", tp.String())
 		}
 	}
 
@@ -217,10 +216,10 @@ var copyCmd = &cobra.Command{
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete_garbage",
-	Short: "delete_garbage",
+	Use:   "delete",
+	Short: "delete",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ylogger.Zero.Info().Msg("Execute delete_garbage command")
+		ylogger.Zero.Info().Msg("Execute delete command")
 		err := config.LoadInstanceConfig(cfgPath)
 		if err != nil {
 			return err
@@ -231,10 +230,10 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		defer con.Close()
+
 		ylogger.Zero.Info().Str("name", args[0]).Msg("delete")
-		msg := message.NewDeleteMessage(args[0], segmentPort, segmentNum, confirm).Encode()
+		msg := message.NewDeleteMessage(args[0], segmentPort, segmentNum, confirm, garbage).Encode()
 		_, err = con.Write(msg)
 		if err != nil {
 			return err
@@ -292,8 +291,9 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 
 	deleteCmd.PersistentFlags().IntVarP(&segmentPort, "port", "p", 6000, "port that segment is listening on")
-	deleteCmd.PersistentFlags().IntVarP(&segmentNum, "segnum", "s", 0, "number of the segment")
+	deleteCmd.PersistentFlags().IntVarP(&segmentNum, "segnum", "s", 0, "logical number of a segment")
 	deleteCmd.PersistentFlags().BoolVarP(&confirm, "confirm", "", false, "confirm deletion")
+	deleteCmd.PersistentFlags().BoolVarP(&garbage, "garbage", "g", false, "delete garbage")
 	rootCmd.AddCommand(deleteCmd)
 }
 

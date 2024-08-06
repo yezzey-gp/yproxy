@@ -335,10 +335,18 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			BackupInterractor:  backupHandler,
 		}
 
-		err = dh.HandleDeleteGarbage(msg)
-		if err != nil {
-			_ = ycl.ReplyError(err, "failed to finish operation")
-			return nil
+		if msg.Garbage {
+			err = dh.HandleDeleteGarbage(msg)
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to finish operation")
+				return nil
+			}
+		} else {
+			err = dh.HandleDeleteFile(msg)
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to finish operation")
+				return nil
+			}
 		}
 
 		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {

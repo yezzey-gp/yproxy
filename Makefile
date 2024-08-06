@@ -19,7 +19,7 @@ mockgen:
 	mockgen -source=pkg/proc/yrreader.go -destination=pkg/mock/proc/yrreader.go -package=mock
 	mockgen -source=pkg/database/database.go -destination=pkg/mock/database.go -package=mock
 	mockgen -source=pkg/backups/backups.go -destination=pkg/mock/backups.go -package=mock
-	mockgen -source=pkg/storage/storage_interractor.go -destination=pkg/mock/storage.go -package=mock
+	mockgen -source=pkg/storage/storage.go -destination=pkg/mock/storage.go -package=mock
 
 version = $(shell git describe --tags --abbrev=0)
 package:
