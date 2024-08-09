@@ -1,5 +1,3 @@
 vendor
 devbin/*
-go1.22.4.linux-amd64.tar.gz
 yezzey.log
-examples/yproxy.yaml
