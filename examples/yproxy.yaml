@@ -1,9 +1,8 @@
-socket_path: "examples/yproxy.sock"
+socket_path: "/tmp/yezzey.sock"
 interconnect_socket_path: "examples/gool.sock"
-
 
 storage:
   storage_endpoint: "https://storage.yandexcloud.net"
   storage_prefix: "wal-e/6/"
-  storage_bucket: "yezzey3"
+  storage_bucket: "gpyezzey"
   storage_region: "us-west-2"
