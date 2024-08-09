@@ -17,11 +17,12 @@ type Instance struct {
 
 	CryptoCnf Crypto `json:"crypto" toml:"crypto" yaml:"crypto"`
 
-	LogPath    string `json:"log_path" toml:"log_path" yaml:"log_path"`
-	LogLevel   string `json:"log_level" toml:"log_level" yaml:"log_level"`
-	SocketPath string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
-	StatPort   int    `json:"stat_port" toml:"stat_port" yaml:"stat_port"`
-	PsqlPort   int    `json:"psql_port" toml:"psql_port" yaml:"psql_port"`
+	LogPath                string `json:"log_path" toml:"log_path" yaml:"log_path"`
+	LogLevel               string `json:"log_level" toml:"log_level" yaml:"log_level"`
+	SocketPath             string `json:"socket_path" toml:"socket_path" yaml:"socket_path"`
+	StatPort               int    `json:"stat_port" toml:"stat_port" yaml:"stat_port"`
+	PsqlPort               int    `json:"psql_port" toml:"psql_port" yaml:"psql_port"`
+	InterconnectSocketPath string `json:"interconnect_socket_path" toml:"interconnect_socket_path" yaml:"interconnect_socket_path"`
 
 	SystemdNotificationsDebug bool `json:"sd_notifications_debug" toml:"sd_notifications_debug" yaml:"sd_notifications_debug"`
 	systemdSocketPath         string
