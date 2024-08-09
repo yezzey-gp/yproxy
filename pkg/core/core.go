@@ -113,50 +113,6 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		i.DispatchServer(psqlListener, PostgresIface)
 	}
 
-	/* dispatch statistic server */
-	go func() {
-
-		listener, err := net.Listen("unix", instanceCnf.InterconnectSocketPath)
-
-		ylogger.Zero.Debug().Msg("try to start interconnect socket listener")
-		if err != nil {
-			ylogger.Zero.Error().Err(err).Msg("failed to start interconnect socket listener")
-			return
-		}
-		defer listener.Close()
-
-		for {
-			clConn, err := listener.Accept()
-			if err != nil {
-				ylogger.Zero.Error().Err(err).Msg("failed to accept interconnection")
-				continue
-			}
-			ylogger.Zero.Debug().Str("addr", clConn.LocalAddr().String()).Msg("accepted client interconnection")
-
-			ycl := client.NewYClient(clConn)
-			r := proc.NewProtoReader(ycl)
-
-			mt, _, err := r.ReadPacket()
-
-			if err != nil {
-				ylogger.Zero.Error().Err(err).Msg("failed to accept interconnection")
-				continue
-			}
-
-			switch mt {
-			case message.MessageTypeGool:
-				msg := message.ReadyForQueryMessage{}
-				_, _ = ycl.GetRW().Write(msg.Encode())
-			default:
-				ycl.ReplyError(fmt.Errorf("wrong message type"), "")
-
-			}
-
-			clConn.Close()
-			ylogger.Zero.Debug().Msg("interconnection closed")
-		}
-	}()
-
 	listener, err := net.Listen("unix", instanceCnf.SocketPath)
 	if err != nil {
 		ylogger.Zero.Error().Err(err).Msg("failed to start socket listener")
@@ -191,6 +147,36 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 	if err != nil {
 		return err
 	}
+
+	iclistener, err := net.Listen("unix", instanceCnf.InterconnectSocketPath)
+
+	ylogger.Zero.Debug().Msg("try to start interconnect socket listener")
+	if err != nil {
+		ylogger.Zero.Error().Err(err).Msg("failed to start interconnect socket listener")
+		return err
+	}
+
+	i.DispatchServer(iclistener, func(clConn net.Conn) {
+		defer clConn.Close()
+		ycl := client.NewYClient(clConn)
+		r := proc.NewProtoReader(ycl)
+
+		mt, _, err := r.ReadPacket()
+
+		if err != nil {
+			ylogger.Zero.Error().Err(err).Msg("failed to accept interconnection")
+		}
+
+		switch mt {
+		case message.MessageTypeGool:
+			msg := message.ReadyForQueryMessage{}
+			_, _ = ycl.GetRW().Write(msg.Encode())
+		default:
+			ycl.ReplyError(fmt.Errorf("wrong message type"), "")
+
+		}
+		ylogger.Zero.Debug().Msg("interconnection closed")
+	})
 
 	notifier, err := sdnotifier.NewNotifier(instanceCnf.GetSystemdSocketPath(), instanceCnf.SystemdNotificationsDebug)
 	if err != nil {
