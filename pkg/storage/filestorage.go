@@ -50,7 +50,10 @@ func (s *FileStorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
 }
 
 func (s *FileStorageInteractor) PutFileToDest(name string, r io.Reader) error {
-	file, err := os.Create(path.Join(s.cnf.StoragePrefix, name))
+	fPath := path.Join(s.cnf.StoragePrefix, name)
+	fDir := path.Dir(fPath)
+	os.MkdirAll(fDir, 0700)
+	file, err := os.Create(fPath)
 	if err != nil {
 		return err
 	}
