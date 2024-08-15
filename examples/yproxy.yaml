@@ -1,5 +1,5 @@
 socket_path: "/tmp/yezzey.sock"
-interconnect_socket_path: "tmp/gool.sock"
+interconnect_socket_path: "/tmp/ic.sock"
 
 storage:
   storage_endpoint: "https://storage.yandexcloud.net"
