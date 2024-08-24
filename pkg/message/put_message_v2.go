@@ -5,7 +5,10 @@ import (
 	"encoding/binary"
 )
 
-type PutSetting struct {
+const StorageClassSetting = "StorageClass"
+const TableSpaceSetting = "TableSpace"
+
+type PutSettings struct {
 	Name  string
 	Value string
 }
@@ -14,12 +17,12 @@ type PutMessageV2 struct {
 	Encrypt bool
 	Name    string
 
-	Settings []PutSetting
+	Settings []PutSettings
 }
 
 var _ ProtoMessage = &PutMessageV2{}
 
-func NewPutMessageV2(name string, encrypt bool, settings []PutSetting) *PutMessageV2 {
+func NewPutMessageV2(name string, encrypt bool, settings []PutSettings) *PutMessageV2 {
 	return &PutMessageV2{
 		Name:     name,
 		Encrypt:  encrypt,
@@ -90,7 +93,7 @@ func (c *PutMessageV2) Decode(body []byte) {
 
 	totalOff := 4 + off + 8
 
-	c.Settings = make([]PutSetting, settLen)
+	c.Settings = make([]PutSettings, settLen)
 
 	for i := 0; i < int(settLen); i++ {
 

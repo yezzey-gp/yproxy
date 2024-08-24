@@ -12,6 +12,8 @@ type Storage struct {
 	StoragePrefix   string `json:"storage_prefix" toml:"storage_prefix" yaml:"storage_prefix"`
 	StorageBucket   string `json:"storage_bucket" toml:"storage_bucket" yaml:"storage_bucket"`
 
+	TablespaceMap map[string]string `json:"tablespace_map" toml:"tablespace_map" yaml:"tablespace_map"`
+
 	// how many concurrrent connection acquire allowed
 	StorageConcurrency int64 `json:"storage_concurrency" toml:"storage_concurrency" yaml:"storage_concurrency"`
 

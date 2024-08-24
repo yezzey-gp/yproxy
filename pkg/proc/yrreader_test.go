@@ -5,10 +5,10 @@ import (
 	"io"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	mock "github.com/yezzey-gp/yproxy/pkg/mock/proc"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"go.uber.org/mock/gomock"
 )
 
 func TestYproxyRetryReaderEmpty(t *testing.T) {

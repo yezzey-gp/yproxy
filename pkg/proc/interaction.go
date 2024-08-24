@@ -12,9 +12,109 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/crypt"
 	"github.com/yezzey-gp/yproxy/pkg/database"
 	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
+
+func ProcessPutExtended(
+	s storage.StorageInteractor,
+	pr *ProtoReader,
+	name string,
+	encrypt bool, settings []message.PutSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
+
+	ycl.SetExternalFilePath(name)
+
+	var w io.WriteCloser
+	r, w := io.Pipe()
+
+	err := s.PutFileToDest(name, r, settings)
+
+	if err != nil {
+		_ = ycl.ReplyError(err, "failed to upload")
+
+		return err
+	}
+
+	defer r.Close()
+	defer w.Close()
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		var ww io.WriteCloser = w
+		if encrypt {
+			if cr == nil {
+				_ = ycl.ReplyError(fmt.Errorf("failed to encrypt, crypter not configured"), "connection aborted")
+				ycl.Close()
+				return
+			}
+
+			var err error
+			ww, err = cr.Encrypt(w)
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to encrypt")
+
+				ycl.Close()
+				return
+			}
+		} else {
+			ylogger.Zero.Debug().Str("path", name).Msg("omit encryption for upload chunks")
+		}
+
+		for {
+			tp, body, err := pr.ReadPacket()
+			if err != nil {
+				_ = ycl.ReplyError(err, "failed to read chunk of data")
+				return
+			}
+
+			ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
+
+			switch tp {
+			case message.MessageTypeCopyData:
+				msg := message.CopyDataMessage{}
+				msg.Decode(body)
+				if n, err := ww.Write(msg.Data); err != nil {
+					_ = ycl.ReplyError(err, "failed to write copy data")
+
+					return
+				} else if n != int(msg.Sz) {
+
+					_ = ycl.ReplyError(fmt.Errorf("unfull write"), "failed to compelete request")
+
+					return
+				}
+			case message.MessageTypeCommandComplete:
+				msg := message.CommandCompleteMessage{}
+				msg.Decode(body)
+
+				if err := ww.Close(); err != nil {
+					_ = ycl.ReplyError(err, "failed to close connection")
+					return
+				}
+
+				ylogger.Zero.Debug().Msg("closing msg writer")
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
+
+	if err != nil {
+		_ = ycl.ReplyError(err, "failed to upload")
+
+		return err
+	}
+
+	return nil
+}
 
 func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
 
@@ -77,94 +177,17 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		msg := message.PutMessage{}
 		msg.Decode(body)
 
-		ycl.SetExternalFilePath(msg.Name)
-
-		var w io.WriteCloser
-
-		r, w := io.Pipe()
-
-		wg := sync.WaitGroup{}
-		wg.Add(1)
-
-		go func() {
-
-			var ww io.WriteCloser = w
-			if msg.Encrypt {
-				if cr == nil {
-					_ = ycl.ReplyError(err, "failed to encrypt, crypter not configured")
-					ycl.Close()
-					return
-				}
-
-				var err error
-				ww, err = cr.Encrypt(w)
-				if err != nil {
-					_ = ycl.ReplyError(err, "failed to encrypt")
-
-					ycl.Close()
-					return
-				}
-			} else {
-				ylogger.Zero.Debug().Str("path", msg.Name).Msg("omit encryption for chunk")
-			}
-
-			defer w.Close()
-			defer wg.Done()
-
-			for {
-				tp, body, err := pr.ReadPacket()
-				if err != nil {
-					_ = ycl.ReplyError(err, "failed to read chunk of data")
-					return
-				}
-
-				ylogger.Zero.Debug().Str("msg-type", tp.String()).Msg("recieved client request")
-
-				switch tp {
-				case message.MessageTypeCopyData:
-					msg := message.CopyDataMessage{}
-					msg.Decode(body)
-					if n, err := ww.Write(msg.Data); err != nil {
-						_ = ycl.ReplyError(err, "failed to write copy data")
-
-						return
-					} else if n != int(msg.Sz) {
-
-						_ = ycl.ReplyError(fmt.Errorf("unfull write"), "failed to compelete request")
-
-						return
-					}
-				case message.MessageTypeCommandComplete:
-					msg := message.CommandCompleteMessage{}
-					msg.Decode(body)
-
-					if err := ww.Close(); err != nil {
-						_ = ycl.ReplyError(err, "failed to close connection")
-						return
-					}
-
-					ylogger.Zero.Debug().Msg("closing msg writer")
-					return
-				}
-			}
-		}()
-
-		err := s.PutFileToDest(msg.Name, r)
-
-		wg.Wait()
-
-		if err != nil {
-			_ = ycl.ReplyError(err, "failed to upload")
-
-			return nil
+		if err := ProcessPutExtended(s, pr, msg.Name, msg.Encrypt, nil, cr, ycl); err != nil {
+			return err
 		}
 
-		_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
+	case message.MessageTypePutV2:
 
-		if err != nil {
-			_ = ycl.ReplyError(err, "failed to upload")
+		msg := message.PutMessageV2{}
+		msg.Decode(body)
 
-			return nil
+		if err := ProcessPutExtended(s, pr, msg.Name, msg.Encrypt, msg.Settings, cr, ycl); err != nil {
+			return err
 		}
 
 	case message.MessageTypeList:
@@ -197,7 +220,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		if err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
 
-			return nil
+			return err
 		}
 
 	case message.MessageTypeCopy:
@@ -226,7 +249,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			return nil
 		}
 
-		var failed []*storage.ObjectInfo
+		var failed []*object.ObjectInfo
 		retryCount := 0
 		for len(objectMetas) > 0 && retryCount < 10 {
 			retryCount++
@@ -289,7 +312,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 				}()
 
 				//write file
-				err = s.PutFileToDest(path, readerEncrypt)
+				err = s.PutFileToDest(path, readerEncrypt, nil)
 				if err != nil {
 					ylogger.Zero.Error().Err(err).Msg("failed to upload file")
 					failed = append(failed, objectMetas[i])
@@ -298,7 +321,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			}
 			objectMetas = failed
 			fmt.Printf("failed files count: %d\n", len(objectMetas))
-			failed = make([]*storage.ObjectInfo, 0)
+			failed = make([]*object.ObjectInfo, 0)
 		}
 
 		if len(objectMetas) > 0 {
@@ -313,7 +336,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
-			return nil
+			return err
 		}
 		fmt.Println("Copy finished successfully")
 		ylogger.Zero.Info().Msg("Copy finished successfully")
@@ -339,19 +362,19 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			err = dh.HandleDeleteGarbage(msg)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to finish operation")
-				return nil
+				return err
 			}
 		} else {
 			err = dh.HandleDeleteFile(msg)
 			if err != nil {
 				_ = ycl.ReplyError(err, "failed to finish operation")
-				return nil
+				return err
 			}
 		}
 
 		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {
 			_ = ycl.ReplyError(err, "failed to upload")
-			return nil
+			return err
 		}
 		ylogger.Zero.Info().Msg("Deleted garbage successfully")
 		if !msg.Confirm {

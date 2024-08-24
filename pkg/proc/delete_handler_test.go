@@ -3,12 +3,12 @@ package proc_test
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	mock "github.com/yezzey-gp/yproxy/pkg/mock"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
-	"github.com/yezzey-gp/yproxy/pkg/storage"
+	"go.uber.org/mock/gomock"
 )
 
 func TestReworkingName(t *testing.T) {
@@ -60,7 +60,7 @@ func TestFilesToDeletion(t *testing.T) {
 		Confirm: false,
 	}
 
-	filesInStorage := []*storage.ObjectInfo{
+	filesInStorage := []*object.ObjectInfo{
 		{Path: "1663_16530_not-deleted_18002_"},
 		{Path: "1663_16530_deleted-after-backup_18002_"},
 		{Path: "1663_16530_deleted-when-backup-start_18002_"},

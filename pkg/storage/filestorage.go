@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 )
 
 // Storage prefix uses as path to folder.
@@ -26,8 +28,8 @@ func (s *FileStorageInteractor) CatFileFromStorage(name string, offset int64) (i
 	_, err = io.CopyN(io.Discard, file, offset)
 	return file, err
 }
-func (s *FileStorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
-	var data []*ObjectInfo
+func (s *FileStorageInteractor) ListPath(prefix string) ([]*object.ObjectInfo, error) {
+	var data []*object.ObjectInfo
 	err := filepath.WalkDir(s.cnf.StoragePrefix+prefix, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -43,13 +45,13 @@ func (s *FileStorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
 		if err != nil {
 			return err
 		}
-		data = append(data, &ObjectInfo{fileinfo.Name(), fileinfo.Size()})
+		data = append(data, &object.ObjectInfo{Path: fileinfo.Name(), Size: fileinfo.Size()})
 		return nil
 	})
 	return data, err
 }
 
-func (s *FileStorageInteractor) PutFileToDest(name string, r io.Reader) error {
+func (s *FileStorageInteractor) PutFileToDest(name string, r io.Reader, _ []message.PutSettings) error {
 	fPath := path.Join(s.cnf.StoragePrefix, name)
 	fDir := path.Dir(fPath)
 	os.MkdirAll(fDir, 0700)
