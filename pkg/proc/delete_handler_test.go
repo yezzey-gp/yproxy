@@ -3,12 +3,12 @@ package proc_test
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	mock "github.com/yezzey-gp/yproxy/pkg/mock"
 	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"go.uber.org/mock/gomock"
 )
 
 func TestReworkingName(t *testing.T) {
