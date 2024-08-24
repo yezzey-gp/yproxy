@@ -5,6 +5,8 @@ import (
 	"io"
 
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 )
 
 type StorageReader interface {
@@ -12,12 +14,12 @@ type StorageReader interface {
 }
 
 type StorageWriter interface {
-	PutFileToDest(name string, r io.Reader) error
+	PutFileToDest(name string, r io.Reader, settings []message.PutSetting) error
 	PatchFile(name string, r io.ReadSeeker, startOffset int64) error
 }
 
 type StorageLister interface {
-	ListPath(prefix string) ([]*ObjectInfo, error)
+	ListPath(prefix string) ([]*object.ObjectInfo, error)
 }
 
 type StorageMover interface {

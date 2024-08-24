@@ -11,6 +11,8 @@ import (
 	"github.com/yezzey-gp/aws-sdk-go/service/s3"
 	"github.com/yezzey-gp/aws-sdk-go/service/s3/s3manager"
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -44,7 +46,7 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.
 	return object.Body, err
 }
 
-func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader) error {
+func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSetting) error {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
@@ -94,12 +96,7 @@ func (s *S3StorageInteractor) PatchFile(name string, r io.ReadSeeker, startOffse
 	return err
 }
 
-type ObjectInfo struct {
-	Path string
-	Size int64
-}
-
-func (s *S3StorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
+func (s *S3StorageInteractor) ListPath(prefix string) ([]*object.ObjectInfo, error) {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
@@ -108,7 +105,7 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
 
 	var continuationToken *string
 	prefix = path.Join(s.cnf.StoragePrefix, prefix)
-	metas := make([]*ObjectInfo, 0)
+	metas := make([]*object.ObjectInfo, 0)
 
 	for {
 		input := &s3.ListObjectsV2Input{
@@ -123,7 +120,7 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*ObjectInfo, error) {
 		}
 
 		for _, obj := range out.Contents {
-			metas = append(metas, &ObjectInfo{
+			metas = append(metas, &object.ObjectInfo{
 				Path: *obj.Key,
 				Size: *obj.Size,
 			})

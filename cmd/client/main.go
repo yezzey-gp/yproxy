@@ -6,12 +6,11 @@ import (
 	"net"
 	"os"
 
-	"github.com/yezzey-gp/yproxy/pkg/storage"
-
 	"github.com/spf13/cobra"
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/client"
 	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -167,7 +166,7 @@ func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 	r := proc.NewProtoReader(ycl)
 
 	done := false
-	res := make([]*storage.ObjectInfo, 0)
+	res := make([]*object.ObjectInfo, 0)
 	for {
 		if done {
 			break

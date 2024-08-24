@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/yezzey-gp/yproxy/pkg/storage"
+	"github.com/yezzey-gp/yproxy/pkg/object"
 )
 
 type ObjectInfoMessage struct {
-	Content []*storage.ObjectInfo
+	Content []*object.ObjectInfo
 }
 
 var _ ProtoMessage = &ObjectInfoMessage{}
 
-func NewObjectMetaMessage(content []*storage.ObjectInfo) *ObjectInfoMessage {
+func NewObjectMetaMessage(content []*object.ObjectInfo) *ObjectInfoMessage {
 	return &ObjectInfoMessage{
 		Content: content,
 	}
@@ -44,12 +44,12 @@ func (c *ObjectInfoMessage) Encode() []byte {
 
 func (c *ObjectInfoMessage) Decode(body []byte) {
 	body = body[4:]
-	c.Content = make([]*storage.ObjectInfo, 0)
+	c.Content = make([]*object.ObjectInfo, 0)
 	for len(body) > 0 {
 		name, index := c.GetString(body)
 		size := int64(binary.BigEndian.Uint64(body[index : index+8]))
 
-		c.Content = append(c.Content, &storage.ObjectInfo{
+		c.Content = append(c.Content, &object.ObjectInfo{
 			Path: name,
 			Size: size,
 		})
