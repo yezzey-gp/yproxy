@@ -81,7 +81,7 @@ func TestPutV2Msg(t *testing.T) {
 		name     string
 		encrypt  bool
 		err      error
-		settings []message.PutSetting
+		settings []message.PutSettings
 	}
 
 	for _, tt := range []tcase{
@@ -89,7 +89,7 @@ func TestPutV2Msg(t *testing.T) {
 			"nam1",
 			true,
 			nil,
-			[]message.PutSetting{
+			[]message.PutSettings{
 				{
 					Name:  "a",
 					Value: "b",

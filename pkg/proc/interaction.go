@@ -21,7 +21,7 @@ func ProcessPutExtended(
 	s storage.StorageInteractor,
 	pr *ProtoReader,
 	name string,
-	encrypt bool, settings []message.PutSetting, cr crypt.Crypter, ycl client.YproxyClient) error {
+	encrypt bool, settings []message.PutSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
 
 	ycl.SetExternalFilePath(name)
 
@@ -51,7 +51,11 @@ func ProcessPutExtended(
 				return
 			}
 		} else {
-			ylogger.Zero.Debug().Str("path", name).Msg("omit encryption for chunk")
+			ylogger.Zero.Debug().Str("path", name).Msg("omit encryption for upload chunks")
+		}
+
+		for _, set := range settings {
+			ylogger.Zero.Debug().Str("setting name", set.Name).Str("value", set.Value).Msg("setting for chunk")
 		}
 
 		defer w.Close()

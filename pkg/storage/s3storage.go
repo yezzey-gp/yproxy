@@ -49,7 +49,7 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.
 	return object.Body, err
 }
 
-func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSetting) error {
+func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
@@ -63,8 +63,8 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 		uploader.Concurrency = 1
 	})
 
-	storageClass := ResolveStorageSetting(settings, "StorageClass", "STANDARD")
-	tableSpace := ResolveStorageSetting(settings, "Tablespace", tablespace.DefaultTableSpace)
+	storageClass := ResolveStorageSetting(settings, message.StorageClassSetting, "STANDARD")
+	tableSpace := ResolveStorageSetting(settings, message.TableSpaceSetting, tablespace.DefaultTableSpace)
 
 	bucket, ok := s.bucketMap[tableSpace]
 	if !ok {

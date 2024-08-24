@@ -15,7 +15,7 @@ type StorageReader interface {
 }
 
 type StorageWriter interface {
-	PutFileToDest(name string, r io.Reader, settings []message.PutSetting) error
+	PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error
 	PatchFile(name string, r io.ReadSeeker, startOffset int64) error
 }
 
@@ -55,6 +55,10 @@ func NewStorage(cnf *config.Storage) (StorageInteractor, error) {
 
 func buildBucketMapFromCnf(cnf *config.Storage) map[string]string {
 	mp := cnf.TablespaceMap
+	if mp == nil {
+		/* fallback for backward-compatibilty if to TableSpace map configured */
+		mp = map[string]string{}
+	}
 	if _, ok := mp[tablespace.DefaultTableSpace]; !ok {
 		mp[tablespace.DefaultTableSpace] = cnf.StorageBucket
 	}

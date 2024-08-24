@@ -12,19 +12,28 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"github.com/yezzey-gp/yproxy/pkg/tablespace"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
-var cfgPath string
-var oldCfgPath string
-var logLevel string
-var decrypt bool
-var encrypt bool
-var offset uint64
-var segmentPort int
-var segmentNum int
-var confirm bool
-var garbage bool
+var (
+	cfgPath    string
+	oldCfgPath string
+	logLevel   string
+
+	decrypt bool
+	/* Put command flags */
+	encrypt      bool
+	storageClass string
+	tableSpace   string
+
+	offset uint64
+
+	segmentPort int
+	segmentNum  int
+	confirm     bool
+	garbage     bool
+)
 
 // TODOV
 func Runner(f func(net.Conn, *config.Instance, []string) error) func(*cobra.Command, []string) error {
@@ -96,7 +105,16 @@ func putFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 	ycl := client.NewYClient(con)
 	r := proc.NewProtoReader(ycl)
 
-	msg := message.NewPutMessage(args[0], encrypt).Encode()
+	msg := message.NewPutMessageV2(args[0], encrypt, []message.PutSettings{
+		{
+			Name:  message.StorageClassSetting,
+			Value: storageClass,
+		},
+		{
+			Name:  message.TableSpaceSetting,
+			Value: tableSpace,
+		},
+	}).Encode()
 	_, err := con.Write(msg)
 	if err != nil {
 		return err
@@ -341,6 +359,8 @@ func init() {
 	rootCmd.AddCommand(copyCmd)
 
 	putCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "e", false, "encrypt external object before put")
+	putCmd.PersistentFlags().StringVarP(&storageClass, "storage-class", "s", "STANDARD", "storage class for message upload")
+	putCmd.PersistentFlags().StringVarP(&tableSpace, "tablespace", "t", tablespace.DefaultTableSpace, "storage class for message upload")
 	rootCmd.AddCommand(putCmd)
 
 	rootCmd.AddCommand(listCmd)

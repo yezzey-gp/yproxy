@@ -17,7 +17,7 @@ func TestResolveSettings(t *testing.T) {
 		name     string
 		defaultV string
 		exp      string
-		settings []message.PutSetting
+		settings []message.PutSettings
 	}
 
 	for _, tt := range []tcase{
@@ -31,7 +31,7 @@ func TestResolveSettings(t *testing.T) {
 			"ababa",
 			"aboba",
 			"aboba",
-			[]message.PutSetting{
+			[]message.PutSettings{
 				{
 					Name:  "djewikdeowp",
 					Value: "jdoiwejoidew",
@@ -43,7 +43,7 @@ func TestResolveSettings(t *testing.T) {
 			"ababa",
 			"aboba",
 			"valval",
-			[]message.PutSetting{
+			[]message.PutSettings{
 				{
 					Name:  "ababa",
 					Value: "valval",

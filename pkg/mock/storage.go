@@ -94,7 +94,7 @@ func (mr *MockStorageWriterMockRecorder) PatchFile(name, r, startOffset any) *go
 }
 
 // PutFileToDest mocks base method.
-func (m *MockStorageWriter) PutFileToDest(name string, r io.Reader, settings []message.PutSetting) error {
+func (m *MockStorageWriter) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutFileToDest", name, r, settings)
 	ret0, _ := ret[0].(error)
@@ -292,7 +292,7 @@ func (mr *MockStorageInteractorMockRecorder) PatchFile(name, r, startOffset any)
 }
 
 // PutFileToDest mocks base method.
-func (m *MockStorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSetting) error {
+func (m *MockStorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutFileToDest", name, r, settings)
 	ret0, _ := ret[0].(error)
