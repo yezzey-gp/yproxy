@@ -7,6 +7,7 @@ import (
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/tablespace"
 )
 
 type StorageReader interface {
@@ -43,10 +44,19 @@ func NewStorage(cnf *config.Storage) (StorageInteractor, error) {
 		}, nil
 	case "s3":
 		return &S3StorageInteractor{
-			pool: NewSessionPool(cnf),
-			cnf:  cnf,
+			pool:      NewSessionPool(cnf),
+			cnf:       cnf,
+			bucketMap: buildBucketMapFromCnf(cnf),
 		}, nil
 	default:
 		return nil, fmt.Errorf("wrong storage type " + cnf.StorageType)
 	}
+}
+
+func buildBucketMapFromCnf(cnf *config.Storage) map[string]string {
+	mp := cnf.TablespaceMap
+	if _, ok := mp[tablespace.DefaultTableSpace]; !ok {
+		mp[tablespace.DefaultTableSpace] = cnf.StorageBucket
+	}
+	return mp
 }

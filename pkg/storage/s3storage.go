@@ -13,6 +13,7 @@ import (
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/tablespace"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
 
@@ -22,6 +23,8 @@ type S3StorageInteractor struct {
 	pool SessionPool
 
 	cnf *config.Storage
+
+	bucketMap map[string]string
 }
 
 func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.ReadCloser, error) {
@@ -50,7 +53,7 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")
-		return nil
+		return err
 	}
 
 	objectPath := path.Join(s.cnf.StoragePrefix, name)
@@ -60,12 +63,21 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 		uploader.Concurrency = 1
 	})
 
+	storageClass := ResolveStorageSetting(settings, "StorageClass", "STANDARD")
+	tableSpace := ResolveStorageSetting(settings, "Tablespace", tablespace.DefaultTableSpace)
+
+	bucket, ok := s.bucketMap[tableSpace]
+	if !ok {
+		ylogger.Zero.Err(err).Msg(fmt.Sprintf("failed to match tablespace %s to s3 bucket.", tableSpace))
+		return err
+	}
+
 	_, err = up.Upload(
 		&s3manager.UploadInput{
-			Bucket:       aws.String(s.cnf.StorageBucket),
+			Bucket:       aws.String(bucket),
 			Key:          aws.String(objectPath),
 			Body:         r,
-			StorageClass: aws.String("STANDARD"),
+			StorageClass: aws.String(storageClass),
 		},
 	)
 
