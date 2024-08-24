@@ -74,6 +74,46 @@ func TestPutMsg(t *testing.T) {
 	}
 }
 
+func TestPutV2Msg(t *testing.T) {
+	assert := assert.New(t)
+
+	type tcase struct {
+		name     string
+		encrypt  bool
+		err      error
+		settings []message.PutSetting
+	}
+
+	for _, tt := range []tcase{
+		{
+			"nam1",
+			true,
+			nil,
+			[]message.PutSetting{
+				{
+					Name:  "a",
+					Value: "b",
+				},
+				{
+					Name:  "cdsdsd",
+					Value: "ds",
+				},
+			},
+		},
+	} {
+
+		msg := message.NewPutMessageV2(tt.name, tt.encrypt, tt.settings)
+		body := msg.Encode()
+
+		msg2 := message.PutMessageV2{}
+
+		msg2.Decode(body[8:])
+
+		assert.Equal(msg.Name, msg2.Name)
+		assert.Equal(msg.Encrypt, msg2.Encrypt)
+	}
+}
+
 func TestPatchMsg(t *testing.T) {
 	assert := assert.New(t)
 
