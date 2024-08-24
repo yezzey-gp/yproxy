@@ -28,14 +28,6 @@ func ProcessPutExtended(
 	var w io.WriteCloser
 	r, w := io.Pipe()
 
-	err := s.PutFileToDest(name, r, settings)
-
-	if err != nil {
-		_ = ycl.ReplyError(err, "failed to upload")
-
-		return err
-	}
-
 	defer r.Close()
 	defer w.Close()
 
@@ -102,6 +94,15 @@ func ProcessPutExtended(
 			}
 		}
 	}()
+
+	/* Should go after reader dispatch! */
+	err := s.PutFileToDest(name, r, settings)
+
+	if err != nil {
+		_ = ycl.ReplyError(err, "failed to upload")
+
+		return err
+	}
 
 	wg.Wait()
 
