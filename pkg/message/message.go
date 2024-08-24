@@ -21,7 +21,7 @@ const (
 	MessageTypePatch           = MessageType(50)
 	MessageTypeCopy            = MessageType(51)
 	MessageTypeGool            = MessageType(52)
-	MessageTypePutV2 		   = MessageType(53)
+	MessageTypePutV2           = MessageType(53)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)
