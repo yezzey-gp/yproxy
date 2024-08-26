@@ -16,17 +16,18 @@ type CatMessageV2 struct {
 
 var _ ProtoMessage = &CatMessage{}
 
-func NewCatMessageV2(name string, decrypt bool, StartOffset uint64) *CatMessageV2 {
+func NewCatMessageV2(name string, decrypt bool, StartOffset uint64, Settings []settings.StorageSettings) *CatMessageV2 {
 	return &CatMessageV2{
 		Name:        name,
 		Decrypt:     decrypt,
 		StartOffset: StartOffset,
+		Settings:    Settings,
 	}
 }
 
 func (c *CatMessageV2) Encode() []byte {
 	bt := []byte{
-		byte(MessageTypeCat),
+		byte(MessageTypeCatV2),
 		0,
 		0,
 		0,

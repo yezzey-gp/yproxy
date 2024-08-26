@@ -162,10 +162,10 @@ func TestCatMsgV2(t *testing.T) {
 		},
 	} {
 
-		msg := message.NewCatMessage(tt.name, tt.decrypt, tt.off)
+		msg := message.NewCatMessageV2(tt.name, tt.decrypt, tt.off, tt.settings)
 		body := msg.Encode()
 
-		msg2 := message.CatMessage{}
+		msg2 := message.CatMessageV2{}
 
 		msg2.Decode(body[8:])
 
