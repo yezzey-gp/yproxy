@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 )
 
@@ -17,7 +17,7 @@ func TestResolveSettings(t *testing.T) {
 		name     string
 		defaultV string
 		exp      string
-		settings []message.PutSettings
+		settings []settings.StorageSettings
 	}
 
 	for _, tt := range []tcase{
@@ -31,7 +31,7 @@ func TestResolveSettings(t *testing.T) {
 			"ababa",
 			"aboba",
 			"aboba",
-			[]message.PutSettings{
+			[]settings.StorageSettings{
 				{
 					Name:  "djewikdeowp",
 					Value: "jdoiwejoidew",
@@ -43,7 +43,7 @@ func TestResolveSettings(t *testing.T) {
 			"ababa",
 			"aboba",
 			"valval",
-			[]message.PutSettings{
+			[]settings.StorageSettings{
 				{
 					Name:  "ababa",
 					Value: "valval",

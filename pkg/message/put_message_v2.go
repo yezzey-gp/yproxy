@@ -1,28 +1,24 @@
 package message
 
 import (
-	"bytes"
 	"encoding/binary"
+
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 )
 
 const StorageClassSetting = "StorageClass"
 const TableSpaceSetting = "TableSpace"
 
-type PutSettings struct {
-	Name  string
-	Value string
-}
-
 type PutMessageV2 struct {
 	Encrypt bool
 	Name    string
 
-	Settings []PutSettings
+	Settings []settings.StorageSettings
 }
 
 var _ ProtoMessage = &PutMessageV2{}
 
-func NewPutMessageV2(name string, encrypt bool, settings []PutSettings) *PutMessageV2 {
+func NewPutMessageV2(name string, encrypt bool, settings []settings.StorageSettings) *PutMessageV2 {
 	return &PutMessageV2{
 		Name:     name,
 		Encrypt:  encrypt,
@@ -67,42 +63,27 @@ func (c *PutMessageV2) Encode() []byte {
 	return append(bs, bt...)
 }
 
-func (c *PutMessageV2) GetCstring(b []byte) (string, uint64) {
-	offset := uint64(0)
-	buff := bytes.NewBufferString("")
-
-	for i := 0; i < len(b); i++ {
-		offset++
-		if b[i] == 0 {
-			break
-		}
-		buff.WriteByte(b[i])
-	}
-
-	return buff.String(), offset
-}
-
 func (c *PutMessageV2) Decode(body []byte) {
 	if body[1] == byte(EncryptMessage) {
 		c.Encrypt = true
 	}
 	var off uint64
-	c.Name, off = c.GetCstring(body[4:])
+	c.Name, off = GetCstring(body[4:])
 
 	settLen := binary.BigEndian.Uint64(body[4+off : 4+off+8])
 
 	totalOff := 4 + off + 8
 
-	c.Settings = make([]PutSettings, settLen)
+	c.Settings = make([]settings.StorageSettings, settLen)
 
 	for i := 0; i < int(settLen); i++ {
 
 		var currOff uint64
 
-		c.Settings[i].Name, currOff = c.GetCstring(body[totalOff:])
+		c.Settings[i].Name, currOff = GetCstring(body[totalOff:])
 		totalOff += currOff
 
-		c.Settings[i].Value, currOff = c.GetCstring(body[totalOff:])
+		c.Settings[i].Value, currOff = GetCstring(body[totalOff:])
 		totalOff += currOff
 	}
 }

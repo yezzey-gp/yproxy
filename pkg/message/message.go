@@ -22,6 +22,7 @@ const (
 	MessageTypeCopy            = MessageType(51)
 	MessageTypeGool            = MessageType(52)
 	MessageTypePutV2           = MessageType(53)
+	MessageTypeCatV2           = MessageType(54)
 
 	DecryptMessage   = RequestEncryption(1)
 	NoDecryptMessage = RequestEncryption(0)
@@ -36,6 +37,8 @@ func (m MessageType) String() string {
 	switch m {
 	case MessageTypeCat:
 		return "CAT"
+	case MessageTypeCatV2:
+		return "CATV2"
 	case MessageTypePut:
 		return "PUT"
 	case MessageTypePutV2:

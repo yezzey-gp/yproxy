@@ -13,15 +13,60 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/database"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
+
+func ProcessCatExtended(
+	s storage.StorageInteractor,
+	pr *ProtoReader,
+	name string,
+	decrypt bool, startOffset uint64, settings []settings.StorageSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
+
+	ycl.SetExternalFilePath(name)
+
+	yr := NewYRetryReader(NewRestartReader(s, name, settings))
+
+	var contentReader io.Reader
+	contentReader = yr
+	defer yr.Close()
+	var err error
+
+	if decrypt {
+		if cr == nil {
+			err := fmt.Errorf("failed to decrypt object, decrypter not configured")
+			_ = ycl.ReplyError(err, "cat failed")
+			ycl.Close()
+			return err
+		}
+		ylogger.Zero.Debug().Str("object-path", name).Msg("decrypt object")
+		contentReader, err = cr.Decrypt(yr)
+		if err != nil {
+			_ = ycl.ReplyError(err, "failed to decrypt object")
+
+			return err
+		}
+	}
+
+	if startOffset != 0 {
+		io.CopyN(io.Discard, contentReader, int64(startOffset))
+	}
+
+	n, err := io.Copy(ycl.GetRW(), contentReader)
+	if err != nil {
+		_ = ycl.ReplyError(err, "copy failed to complete")
+	}
+	ylogger.Zero.Debug().Int64("copied bytes", n).Msg("decrypt object")
+
+	return nil
+}
 
 func ProcessPutExtended(
 	s storage.StorageInteractor,
 	pr *ProtoReader,
 	name string,
-	encrypt bool, settings []message.PutSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
+	encrypt bool, settings []settings.StorageSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
 
 	ycl.SetExternalFilePath(name)
 
@@ -140,42 +185,23 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 	switch tp {
 	case message.MessageTypeCat:
+
 		// omit first byte
 		msg := message.CatMessage{}
 		msg.Decode(body)
 
-		ycl.SetExternalFilePath(msg.Name)
-
-		yr := NewYRetryReader(NewRestartReader(s, msg.Name))
-
-		var contentReader io.Reader
-		contentReader = yr
-		defer yr.Close()
-
-		if msg.Decrypt {
-			if cr == nil {
-				_ = ycl.ReplyError(err, "failed to decrypt object, decrypter not configured")
-				ycl.Close()
-				return nil
-			}
-			ylogger.Zero.Debug().Str("object-path", msg.Name).Msg("decrypt object")
-			contentReader, err = cr.Decrypt(yr)
-			if err != nil {
-				_ = ycl.ReplyError(err, "failed to decrypt object")
-
-				return err
-			}
+		if err := ProcessCatExtended(s, pr, msg.Name, msg.Decrypt, msg.StartOffset, nil, cr, ycl); err != nil {
+			return err
 		}
 
-		if msg.StartOffset != 0 {
-			io.CopyN(io.Discard, contentReader, int64(msg.StartOffset))
-		}
+	case message.MessageTypeCatV2:
+		// omit first byte
+		msg := message.CatMessageV2{}
+		msg.Decode(body)
 
-		n, err := io.Copy(ycl.GetRW(), contentReader)
-		if err != nil {
-			_ = ycl.ReplyError(err, "copy failed to complete")
+		if err := ProcessCatExtended(s, pr, msg.Name, msg.Decrypt, msg.StartOffset, msg.Settings, cr, ycl); err != nil {
+			return err
 		}
-		ylogger.Zero.Debug().Int64("copied bytes", n).Msg("decrypt object")
 
 	case message.MessageTypePut:
 
@@ -263,7 +289,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			for i := 0; i < len(objectMetas); i++ {
 				path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 				//get reader
-				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path))
+				readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path, nil))
 				var fromReader io.Reader
 				fromReader = readerFromOldBucket
 				defer readerFromOldBucket.Close()

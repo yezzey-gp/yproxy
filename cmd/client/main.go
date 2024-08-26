@@ -12,6 +12,7 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
 	"github.com/yezzey-gp/yproxy/pkg/proc"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/tablespace"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -105,7 +106,7 @@ func putFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 	ycl := client.NewYClient(con)
 	r := proc.NewProtoReader(ycl)
 
-	msg := message.NewPutMessageV2(args[0], encrypt, []message.PutSettings{
+	msg := message.NewPutMessageV2(args[0], encrypt, []settings.StorageSettings{
 		{
 			Name:  message.StorageClassSetting,
 			Value: storageClass,

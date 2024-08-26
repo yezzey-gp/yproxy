@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -18,6 +19,7 @@ type YRestartReader struct {
 	underlying io.ReadCloser
 	s          storage.StorageInteractor
 	name       string
+	settings   []settings.StorageSettings
 }
 
 // Close implements RestartReader.
@@ -34,11 +36,12 @@ func (y *YRestartReader) Read(p []byte) (n int, err error) {
 }
 
 func NewRestartReader(s storage.StorageInteractor,
-	name string) RestartReader {
+	name string, setts []settings.StorageSettings) RestartReader {
 
 	return &YRestartReader{
-		s:    s,
-		name: name,
+		s:        s,
+		name:     name,
+		settings: setts,
 	}
 }
 
@@ -51,7 +54,7 @@ func (y *YRestartReader) Restart(offsetStart int64) error {
 	} else {
 		ylogger.Zero.Error().Str("object-path", y.name).Int64("offset", offsetStart).Msg("cat object with offset after possible error")
 	}
-	r, err := y.s.CatFileFromStorage(y.name, offsetStart)
+	r, err := y.s.CatFileFromStorage(y.name, offsetStart, y.settings)
 	if err != nil {
 		return err
 	}

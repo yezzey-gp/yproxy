@@ -13,8 +13,8 @@ import (
 	io "io"
 	reflect "reflect"
 
-	message "github.com/yezzey-gp/yproxy/pkg/message"
 	object "github.com/yezzey-gp/yproxy/pkg/object"
+	settings "github.com/yezzey-gp/yproxy/pkg/settings"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,18 +42,18 @@ func (m *MockStorageReader) EXPECT() *MockStorageReaderMockRecorder {
 }
 
 // CatFileFromStorage mocks base method.
-func (m *MockStorageReader) CatFileFromStorage(name string, offset int64) (io.ReadCloser, error) {
+func (m *MockStorageReader) CatFileFromStorage(name string, offset int64, setts []settings.StorageSettings) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CatFileFromStorage", name, offset)
+	ret := m.ctrl.Call(m, "CatFileFromStorage", name, offset, setts)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CatFileFromStorage indicates an expected call of CatFileFromStorage.
-func (mr *MockStorageReaderMockRecorder) CatFileFromStorage(name, offset any) *gomock.Call {
+func (mr *MockStorageReaderMockRecorder) CatFileFromStorage(name, offset, setts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CatFileFromStorage", reflect.TypeOf((*MockStorageReader)(nil).CatFileFromStorage), name, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CatFileFromStorage", reflect.TypeOf((*MockStorageReader)(nil).CatFileFromStorage), name, offset, setts)
 }
 
 // MockStorageWriter is a mock of StorageWriter interface.
@@ -94,7 +94,7 @@ func (mr *MockStorageWriterMockRecorder) PatchFile(name, r, startOffset any) *go
 }
 
 // PutFileToDest mocks base method.
-func (m *MockStorageWriter) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
+func (m *MockStorageWriter) PutFileToDest(name string, r io.Reader, settings []settings.StorageSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutFileToDest", name, r, settings)
 	ret0, _ := ret[0].(error)
@@ -220,18 +220,18 @@ func (m *MockStorageInteractor) EXPECT() *MockStorageInteractorMockRecorder {
 }
 
 // CatFileFromStorage mocks base method.
-func (m *MockStorageInteractor) CatFileFromStorage(name string, offset int64) (io.ReadCloser, error) {
+func (m *MockStorageInteractor) CatFileFromStorage(name string, offset int64, setts []settings.StorageSettings) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CatFileFromStorage", name, offset)
+	ret := m.ctrl.Call(m, "CatFileFromStorage", name, offset, setts)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CatFileFromStorage indicates an expected call of CatFileFromStorage.
-func (mr *MockStorageInteractorMockRecorder) CatFileFromStorage(name, offset any) *gomock.Call {
+func (mr *MockStorageInteractorMockRecorder) CatFileFromStorage(name, offset, setts any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CatFileFromStorage", reflect.TypeOf((*MockStorageInteractor)(nil).CatFileFromStorage), name, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CatFileFromStorage", reflect.TypeOf((*MockStorageInteractor)(nil).CatFileFromStorage), name, offset, setts)
 }
 
 // DeleteObject mocks base method.
@@ -292,7 +292,7 @@ func (mr *MockStorageInteractorMockRecorder) PatchFile(name, r, startOffset any)
 }
 
 // PutFileToDest mocks base method.
-func (m *MockStorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
+func (m *MockStorageInteractor) PutFileToDest(name string, r io.Reader, settings []settings.StorageSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutFileToDest", name, r, settings)
 	ret0, _ := ret[0].(error)
