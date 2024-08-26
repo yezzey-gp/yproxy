@@ -20,7 +20,7 @@ type FileStorageInteractor struct {
 	cnf *config.Storage
 }
 
-func (s *FileStorageInteractor) CatFileFromStorage(name string, offset int64) (io.ReadCloser, error) {
+func (s *FileStorageInteractor) CatFileFromStorage(name string, offset int64, _ []settings.StorageSettings) (io.ReadCloser, error) {
 	file, err := os.Open(path.Join(s.cnf.StoragePrefix, name))
 	if err != nil {
 		return nil, err

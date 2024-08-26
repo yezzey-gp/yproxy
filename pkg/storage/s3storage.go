@@ -28,7 +28,7 @@ type S3StorageInteractor struct {
 	bucketMap map[string]string
 }
 
-func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.ReadCloser, error) {
+func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64, setts []settings.StorageSettings) (io.ReadCloser, error) {
 	// XXX: fix this
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
@@ -37,8 +37,18 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.
 	}
 
 	objectPath := path.Join(s.cnf.StoragePrefix, name)
+
+	tableSpace := ResolveStorageSetting(setts, message.TableSpaceSetting, tablespace.DefaultTableSpace)
+
+	bucket, ok := s.bucketMap[tableSpace]
+	if !ok {
+		err := fmt.Errorf("failed to match tablespace %s to s3 bucket.", tableSpace)
+		ylogger.Zero.Err(err)
+		return nil, err
+	}
+
 	input := &s3.GetObjectInput{
-		Bucket: &s.cnf.StorageBucket,
+		Bucket: &bucket,
 		Key:    aws.String(objectPath),
 		Range:  aws.String(fmt.Sprintf("bytes=%d-", offset)),
 	}

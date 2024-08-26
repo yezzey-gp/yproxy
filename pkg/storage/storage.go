@@ -11,7 +11,7 @@ import (
 )
 
 type StorageReader interface {
-	CatFileFromStorage(name string, offset int64) (io.ReadCloser, error)
+	CatFileFromStorage(name string, offset int64, setts []settings.StorageSettings) (io.ReadCloser, error)
 }
 
 type StorageWriter interface {
