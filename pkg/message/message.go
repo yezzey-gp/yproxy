@@ -37,6 +37,8 @@ func (m MessageType) String() string {
 	switch m {
 	case MessageTypeCat:
 		return "CAT"
+	case MessageTypeCatV2:
+		return "CATV2"
 	case MessageTypePut:
 		return "PUT"
 	case MessageTypePutV2:
