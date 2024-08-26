@@ -6,42 +6,47 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/settings"
 )
 
-const StorageClassSetting = "StorageClass"
-const TableSpaceSetting = "TableSpace"
-
-type PutMessageV2 struct {
-	Encrypt bool
-	Name    string
+type CatMessageV2 struct {
+	Decrypt     bool
+	Name        string
+	StartOffset uint64
 
 	Settings []settings.StorageSettings
 }
 
-var _ ProtoMessage = &PutMessageV2{}
+var _ ProtoMessage = &CatMessage{}
 
-func NewPutMessageV2(name string, encrypt bool, settings []settings.StorageSettings) *PutMessageV2 {
-	return &PutMessageV2{
-		Name:     name,
-		Encrypt:  encrypt,
-		Settings: settings,
+func NewCatMessageV2(name string, decrypt bool, StartOffset uint64) *CatMessageV2 {
+	return &CatMessageV2{
+		Name:        name,
+		Decrypt:     decrypt,
+		StartOffset: StartOffset,
 	}
 }
 
-func (c *PutMessageV2) Encode() []byte {
+func (c *CatMessageV2) Encode() []byte {
 	bt := []byte{
-		byte(MessageTypePutV2),
+		byte(MessageTypeCat),
 		0,
 		0,
 		0,
 	}
 
-	if c.Encrypt {
-		bt[1] = byte(EncryptMessage)
+	if c.Decrypt {
+		bt[1] = byte(DecryptMessage)
 	} else {
-		bt[1] = byte(NoEncryptMessage)
+		bt[1] = byte(NoDecryptMessage)
+	}
+
+	if c.StartOffset != 0 {
+		bt[2] = byte(ExtendedMesssage)
 	}
 
 	bt = append(bt, []byte(c.Name)...)
 	bt = append(bt, 0)
+	if c.StartOffset != 0 {
+		bt = binary.BigEndian.AppendUint64(bt, c.StartOffset)
+	}
 
 	slen := make([]byte, 8)
 	binary.BigEndian.PutUint64(slen, uint64(len(c.Settings)))
@@ -63,12 +68,15 @@ func (c *PutMessageV2) Encode() []byte {
 	return append(bs, bt...)
 }
 
-func (c *PutMessageV2) Decode(body []byte) {
-	if body[1] == byte(EncryptMessage) {
-		c.Encrypt = true
-	}
+func (c *CatMessageV2) Decode(body []byte) {
 	var off uint64
 	c.Name, off = GetCstring(body[4:])
+	if body[1] == byte(DecryptMessage) {
+		c.Decrypt = true
+	}
+	if body[2] == byte(ExtendedMesssage) {
+		c.StartOffset = binary.BigEndian.Uint64(body[4+len(c.Name)+1:])
+	}
 
 	settLen := binary.BigEndian.Uint64(body[4+off : 4+off+8])
 

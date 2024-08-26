@@ -13,6 +13,7 @@ import (
 	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/tablespace"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -49,7 +50,7 @@ func (s *S3StorageInteractor) CatFileFromStorage(name string, offset int64) (io.
 	return object.Body, err
 }
 
-func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
+func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings []settings.StorageSettings) error {
 	sess, err := s.pool.GetSession(context.TODO())
 	if err != nil {
 		ylogger.Zero.Err(err).Msg("failed to acquire s3 session")

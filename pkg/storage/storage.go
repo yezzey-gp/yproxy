@@ -5,8 +5,8 @@ import (
 	"io"
 
 	"github.com/yezzey-gp/yproxy/config"
-	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/tablespace"
 )
 
@@ -15,7 +15,7 @@ type StorageReader interface {
 }
 
 type StorageWriter interface {
-	PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error
+	PutFileToDest(name string, r io.Reader, settings []settings.StorageSettings) error
 	PatchFile(name string, r io.ReadSeeker, startOffset int64) error
 }
 

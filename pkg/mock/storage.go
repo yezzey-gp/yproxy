@@ -13,8 +13,8 @@ import (
 	io "io"
 	reflect "reflect"
 
-	message "github.com/yezzey-gp/yproxy/pkg/message"
 	object "github.com/yezzey-gp/yproxy/pkg/object"
+	settings "github.com/yezzey-gp/yproxy/pkg/settings"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -94,7 +94,7 @@ func (mr *MockStorageWriterMockRecorder) PatchFile(name, r, startOffset any) *go
 }
 
 // PutFileToDest mocks base method.
-func (m *MockStorageWriter) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
+func (m *MockStorageWriter) PutFileToDest(name string, r io.Reader, settings []settings.StorageSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutFileToDest", name, r, settings)
 	ret0, _ := ret[0].(error)
@@ -292,7 +292,7 @@ func (mr *MockStorageInteractorMockRecorder) PatchFile(name, r, startOffset any)
 }
 
 // PutFileToDest mocks base method.
-func (m *MockStorageInteractor) PutFileToDest(name string, r io.Reader, settings []message.PutSettings) error {
+func (m *MockStorageInteractor) PutFileToDest(name string, r io.Reader, settings []settings.StorageSettings) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutFileToDest", name, r, settings)
 	ret0, _ := ret[0].(error)

@@ -13,6 +13,7 @@ import (
 	"github.com/yezzey-gp/yproxy/pkg/database"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 	"github.com/yezzey-gp/yproxy/pkg/storage"
 	"github.com/yezzey-gp/yproxy/pkg/ylogger"
 )
@@ -21,7 +22,7 @@ func ProcessPutExtended(
 	s storage.StorageInteractor,
 	pr *ProtoReader,
 	name string,
-	encrypt bool, settings []message.PutSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
+	encrypt bool, settings []settings.StorageSettings, cr crypt.Crypter, ycl client.YproxyClient) error {
 
 	ycl.SetExternalFilePath(name)
 

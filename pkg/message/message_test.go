@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yezzey-gp/yproxy/pkg/message"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 )
 
 func TestCatMsg(t *testing.T) {
@@ -81,7 +82,7 @@ func TestPutV2Msg(t *testing.T) {
 		name     string
 		encrypt  bool
 		err      error
-		settings []message.PutSettings
+		settings []settings.StorageSettings
 	}
 
 	for _, tt := range []tcase{
@@ -89,7 +90,7 @@ func TestPutV2Msg(t *testing.T) {
 			"nam1",
 			true,
 			nil,
-			[]message.PutSettings{
+			[]settings.StorageSettings{
 				{
 					Name:  "a",
 					Value: "b",
@@ -111,6 +112,65 @@ func TestPutV2Msg(t *testing.T) {
 
 		assert.Equal(msg.Name, msg2.Name)
 		assert.Equal(msg.Encrypt, msg2.Encrypt)
+	}
+}
+
+func TestCatMsgV2(t *testing.T) {
+	assert := assert.New(t)
+
+	type tcase struct {
+		name    string
+		decrypt bool
+		off     uint64
+
+		settings []settings.StorageSettings
+		err      error
+	}
+
+	for _, tt := range []tcase{
+		{
+			"nam1",
+			true,
+			0,
+			[]settings.StorageSettings{
+				{
+					Name:  "a",
+					Value: "b",
+				},
+				{
+					Name:  "cdsdsd",
+					Value: "ds",
+				},
+			},
+			nil,
+		},
+		{
+			"nam1",
+			true,
+			10,
+			[]settings.StorageSettings{
+				{
+					Name:  "a",
+					Value: "b",
+				},
+				{
+					Name:  "cdsdsd",
+					Value: "ds",
+				},
+			},
+			nil,
+		},
+	} {
+
+		msg := message.NewCatMessage(tt.name, tt.decrypt, tt.off)
+		body := msg.Encode()
+
+		msg2 := message.CatMessage{}
+
+		msg2.Decode(body[8:])
+
+		assert.Equal(msg.Name, msg2.Name)
+		assert.Equal(msg.Decrypt, msg2.Decrypt)
 	}
 }
 

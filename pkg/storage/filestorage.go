@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/yezzey-gp/yproxy/config"
-	"github.com/yezzey-gp/yproxy/pkg/message"
 	"github.com/yezzey-gp/yproxy/pkg/object"
+	"github.com/yezzey-gp/yproxy/pkg/settings"
 )
 
 // Storage prefix uses as path to folder.
@@ -51,7 +51,7 @@ func (s *FileStorageInteractor) ListPath(prefix string) ([]*object.ObjectInfo, e
 	return data, err
 }
 
-func (s *FileStorageInteractor) PutFileToDest(name string, r io.Reader, _ []message.PutSettings) error {
+func (s *FileStorageInteractor) PutFileToDest(name string, r io.Reader, _ []settings.StorageSettings) error {
 	fPath := path.Join(s.cnf.StoragePrefix, name)
 	fDir := path.Dir(fPath)
 	os.MkdirAll(fDir, 0700)

@@ -1,8 +1,8 @@
 package storage
 
-import "github.com/yezzey-gp/yproxy/pkg/message"
+import "github.com/yezzey-gp/yproxy/pkg/settings"
 
-func ResolveStorageSetting(settings []message.PutSettings, name, defaultVal string) string {
+func ResolveStorageSetting(settings []settings.StorageSettings, name, defaultVal string) string {
 
 	for _, s := range settings {
 		if s.Name == name {
