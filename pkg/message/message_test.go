@@ -112,6 +112,7 @@ func TestPutV2Msg(t *testing.T) {
 
 		assert.Equal(msg.Name, msg2.Name)
 		assert.Equal(msg.Encrypt, msg2.Encrypt)
+		assert.Equal(msg.Settings, msg2.Settings)
 	}
 }
 
@@ -171,6 +172,8 @@ func TestCatMsgV2(t *testing.T) {
 
 		assert.Equal(msg.Name, msg2.Name)
 		assert.Equal(msg.Decrypt, msg2.Decrypt)
+		assert.Equal(msg.StartOffset, msg2.StartOffset)
+		assert.Equal(msg.Settings, msg2.Settings)
 	}
 }
 

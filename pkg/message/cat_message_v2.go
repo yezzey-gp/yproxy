@@ -39,19 +39,11 @@ func (c *CatMessageV2) Encode() []byte {
 		bt[1] = byte(NoDecryptMessage)
 	}
 
-	if c.StartOffset != 0 {
-		bt[2] = byte(ExtendedMesssage)
-	}
-
 	bt = append(bt, []byte(c.Name)...)
 	bt = append(bt, 0)
-	if c.StartOffset != 0 {
-		bt = binary.BigEndian.AppendUint64(bt, c.StartOffset)
-	}
+	bt = binary.BigEndian.AppendUint64(bt, c.StartOffset)
 
-	slen := make([]byte, 8)
-	binary.BigEndian.PutUint64(slen, uint64(len(c.Settings)))
-	bt = append(bt, slen...)
+	bt = binary.BigEndian.AppendUint64(bt, uint64(len(c.Settings)))
 
 	for _, s := range c.Settings {
 
@@ -75,13 +67,11 @@ func (c *CatMessageV2) Decode(body []byte) {
 	if body[1] == byte(DecryptMessage) {
 		c.Decrypt = true
 	}
-	if body[2] == byte(ExtendedMesssage) {
-		c.StartOffset = binary.BigEndian.Uint64(body[4+len(c.Name)+1:])
-	}
+	c.StartOffset = binary.BigEndian.Uint64(body[4+len(c.Name)+1:])
 
-	settLen := binary.BigEndian.Uint64(body[4+off : 4+off+8])
+	settLen := binary.BigEndian.Uint64(body[4+8+off : 4+off+8+8])
 
-	totalOff := 4 + off + 8
+	totalOff := 4 + off + 8 + 8
 
 	c.Settings = make([]settings.StorageSettings, settLen)
 
