@@ -95,6 +95,10 @@ func ProcessPutExtended(
 		}
 	}()
 
+	for _, s := range settings {
+		ylogger.Zero.Debug().Str("name", s.Name).Str("value", s.Value).Msg("offloadng setting")
+	}
+
 	/* Should go after reader dispatch! */
 	err := s.PutFileToDest(name, r, settings)
 

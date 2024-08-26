@@ -38,6 +38,8 @@ func (m MessageType) String() string {
 		return "CAT"
 	case MessageTypePut:
 		return "PUT"
+	case MessageTypePutV2:
+		return "PUTV2"
 	case MessageTypeCommandComplete:
 		return "COMMAND COMPLETE"
 	case MessageTypeReadyForQuery:
