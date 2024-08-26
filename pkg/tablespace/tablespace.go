@@ -1,3 +1,3 @@
 package tablespace
 
-const DefaultTableSpace = "BASE"
+const DefaultTableSpace = "pg_default"

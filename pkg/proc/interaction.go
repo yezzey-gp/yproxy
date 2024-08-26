@@ -95,6 +95,10 @@ func ProcessPutExtended(
 		}
 	}()
 
+	for _, s := range settings {
+		ylogger.Zero.Debug().Str("name", name).Str("name", s.Name).Str("value", s.Value).Msg("offloading setting")
+	}
+
 	/* Should go after reader dispatch! */
 	err := s.PutFileToDest(name, r, settings)
 
@@ -186,6 +190,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 
 		msg := message.PutMessageV2{}
 		msg.Decode(body)
+
+		// ylogger.Zero.Debug().Bytes("msg", body).Msg("log info")
 
 		if err := ProcessPutExtended(s, pr, msg.Name, msg.Encrypt, msg.Settings, cr, ycl); err != nil {
 			return err
