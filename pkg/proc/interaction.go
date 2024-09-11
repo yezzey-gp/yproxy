@@ -134,6 +134,13 @@ func ProcessPutExtended(
 					return
 				}
 
+				if encrypt {
+					if err := w.Close(); err != nil {
+						ylogger.Zero.Error().Err(err).Msg("failed to close connection")
+						return
+					}
+				}
+
 				ylogger.Zero.Debug().Msg("closing msg writer")
 				return
 			}
