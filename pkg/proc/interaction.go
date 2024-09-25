@@ -370,8 +370,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			ylogger.Zero.Error().Int("failed files count", len(objectMetas)).Msg("failed to upload some files")
 			ylogger.Zero.Error().Any("failed files", objectMetas).Msg("failed to upload some files")
 
-			_ = ycl.ReplyError(err, "failed to copy some files")
-			return err
+			// _ = ycl.ReplyError(err, "failed to copy some files")
+			return nil
 		}
 
 		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {
