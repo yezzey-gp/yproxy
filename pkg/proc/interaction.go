@@ -339,13 +339,13 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 					}
 
 					if _, err := io.Copy(writerToNewBucket, fromReader); err != nil {
-						ylogger.Zero.Error().Err(err).Msg("failed to copy data")
+						ylogger.Zero.Error().Str("path", path).Err(err).Msg("failed to copy data")
 						failed = append(failed, objectMetas[i])
 						return
 					}
 
 					if err := writerToNewBucket.Close(); err != nil {
-						ylogger.Zero.Error().Err(err).Msg("failed to close writer")
+						ylogger.Zero.Error().Str("path", path).Err(err).Msg("failed to close writer")
 						failed = append(failed, objectMetas[i])
 						return
 					}
@@ -371,7 +371,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			ylogger.Zero.Error().Any("failed files", objectMetas).Msg("failed to upload some files")
 
 			_ = ycl.ReplyError(err, "failed to copy some files")
-			return nil
+			return err
 		}
 
 		if _, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode()); err != nil {
