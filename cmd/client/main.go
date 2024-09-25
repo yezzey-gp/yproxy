@@ -92,7 +92,7 @@ func copyFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 
 	ansType, body, err := protoReader.ReadPacket()
 	if err != nil {
-		ylogger.Zero.Debug().Err(err).Msg("error while ans")
+		ylogger.Zero.Debug().Err(err).Msg("error while answer")
 		return err
 	}
 
