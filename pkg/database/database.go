@@ -12,7 +12,7 @@ import (
 
 //go:generate mockgen -destination=../mock/mock_database_interractor.go -package mock
 type DatabaseInterractor interface {
-	GetVirtualExpireIndexes(int) (map[string]bool, map[string]uint64, error)
+	GetVirtualExpireIndexes(port uint64) (map[string]bool, map[string]uint64, error)
 }
 
 type DatabaseHandler struct {
@@ -31,7 +31,7 @@ type Ei struct {
 	fqnmd5     string
 }
 
-func (database *DatabaseHandler) GetVirtualExpireIndexes(port int) (map[string]bool, map[string]uint64, error) { //TODO несколько баз
+func (database *DatabaseHandler) GetVirtualExpireIndexes(port uint64) (map[string]bool, map[string]uint64, error) { //TODO несколько баз
 	db, err := getDatabase(port)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get ao/aocs tables %v", err) //fix
@@ -95,7 +95,7 @@ func (database *DatabaseHandler) GetVirtualExpireIndexes(port int) (map[string]b
 	return c2, c, err
 }
 
-func getDatabase(port int) (DB, error) {
+func getDatabase(port uint64) (DB, error) {
 	conn, err := connectToDatabase(port, "postgres")
 	if err != nil {
 		return DB{}, err
@@ -154,7 +154,7 @@ func getDatabase(port int) (DB, error) {
 	return DB{}, fmt.Errorf("no yezzey schema across databases")
 }
 
-func connectToDatabase(port int, database string) (*pgx.Conn, error) {
+func connectToDatabase(port uint64, database string) (*pgx.Conn, error) {
 	config, err := pgx.ParseEnvLibpq()
 	if err != nil {
 		return nil, errors.Wrap(err, "Connect: unable to read environment variables")

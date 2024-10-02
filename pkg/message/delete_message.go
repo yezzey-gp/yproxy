@@ -7,15 +7,15 @@ import (
 
 type DeleteMessage struct { //seg port
 	Name    string
-	Port    int
-	Segnum  int
+	Port    uint64
+	Segnum  uint64
 	Confirm bool
 	Garbage bool
 }
 
 var _ ProtoMessage = &DeleteMessage{}
 
-func NewDeleteMessage(name string, port int, seg int, confirm bool, garbage bool) *DeleteMessage {
+func NewDeleteMessage(name string, port uint64, seg uint64, confirm bool, garbage bool) *DeleteMessage {
 	return &DeleteMessage{
 		Name:    name,
 		Port:    port,
@@ -65,8 +65,8 @@ func (c *DeleteMessage) Decode(body []byte) {
 		c.Garbage = true
 	}
 	c.Name = c.GetDeleteName(body[4:])
-	c.Port = int(binary.BigEndian.Uint64(body[len(body)-16 : len(body)-8]))
-	c.Segnum = int(binary.BigEndian.Uint64(body[len(body)-8:]))
+	c.Port = binary.BigEndian.Uint64(body[len(body)-16 : len(body)-8])
+	c.Segnum = binary.BigEndian.Uint64(body[len(body)-8:])
 }
 
 func (c *DeleteMessage) GetDeleteName(b []byte) string {

@@ -30,8 +30,8 @@ var (
 
 	offset uint64
 
-	segmentPort int
-	segmentNum  int
+	segmentPort uint64
+	segmentNum  uint64
 	confirm     bool
 	garbage     bool
 )
@@ -367,8 +367,8 @@ func init() {
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(goolCmd)
 
-	deleteCmd.PersistentFlags().IntVarP(&segmentPort, "port", "p", 6000, "port that segment is listening on")
-	deleteCmd.PersistentFlags().IntVarP(&segmentNum, "segnum", "s", 0, "logical number of a segment")
+	deleteCmd.PersistentFlags().Uint64VarP(&segmentPort, "port", "p", 6000, "port that segment is listening on")
+	deleteCmd.PersistentFlags().Uint64VarP(&segmentNum, "segnum", "s", 0, "logical number of a segment")
 	deleteCmd.PersistentFlags().BoolVarP(&confirm, "confirm", "", false, "confirm deletion")
 	deleteCmd.PersistentFlags().BoolVarP(&garbage, "garbage", "g", false, "delete garbage")
 	rootCmd.AddCommand(deleteCmd)

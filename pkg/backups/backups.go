@@ -16,14 +16,14 @@ type BackupLSN struct {
 
 //go:generate mockgen -destination=pkg/mock/backups.go -package=mock
 type BackupInterractor interface {
-	GetFirstLSN(int) (uint64, error)
+	GetFirstLSN(seg uint64) (uint64, error)
 }
 
 type WalgBackupInterractor struct { //TODO: rewrite to using s3 instead of wal-g cmd
 }
 
 // get lsn of the oldest backup
-func (b *WalgBackupInterractor) GetFirstLSN(seg int) (uint64, error) {
+func (b *WalgBackupInterractor) GetFirstLSN(seg uint64) (uint64, error) {
 	cmd := exec.Command("/usr/bin/wal-g", "st", "ls", fmt.Sprintf("segments_005/seg%d/basebackups_005/", seg), "--config=/etc/wal-g/wal-g.yaml")
 	ylogger.Zero.Debug().Any("flags", cmd.Args).Msg("Command args")
 	var out bytes.Buffer

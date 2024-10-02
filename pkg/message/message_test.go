@@ -297,8 +297,8 @@ func TestDeleteMsg(t *testing.T) {
 	msg2.Decode(body[8:])
 
 	assert.Equal("myname/mynextname", msg2.Name)
-	assert.Equal(5432, msg2.Port)
-	assert.Equal(42, msg2.Segnum)
+	assert.Equal(uint64(5432), msg2.Port)
+	assert.Equal(uint64(42), msg2.Segnum)
 	assert.True(msg2.Confirm)
 	assert.True(msg2.Garbage)
 }
