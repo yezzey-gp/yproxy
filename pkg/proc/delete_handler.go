@@ -90,8 +90,8 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 		return nil, errors.Wrap(err, "could not get virtual and expire indexes")
 	}
 	ylogger.Zero.Info().Msg("recieved virtual index and expire index")
-	ylogger.Zero.Debug().Int("virtual", len(vi)).Msg("vi count")
-	ylogger.Zero.Debug().Int("expire", len(ei)).Msg("ei count")
+	ylogger.Zero.Debug().Int("virtual", len(vi)).Msg("virtual index match count")
+	ylogger.Zero.Debug().Int("expire", len(ei)).Msg("exprire index match count")
 
 	filesToDelete := make([]string, 0)
 	for i := 0; i < len(objectMetas); i++ {
@@ -102,7 +102,7 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 			ylogger.Zero.Debug().Str("file", objectMetas[i].Path).
 				Bool("file in expire index", ok).
 				Bool("lsn is less than in first backup", lsn < firstBackupLSN).
-				Msg("file will be deleted")
+				Msg("file does not persisnt in virtual index, not needed for PITR, so will be deleted")
 			filesToDelete = append(filesToDelete, objectMetas[i].Path)
 		}
 	}
