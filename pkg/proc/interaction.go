@@ -398,6 +398,8 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			BackupInterractor:  backupHandler,
 		}
 
+		ylogger.Zero.Debug().Str("Name", msg.Name).Bool("garb", msg.Garbage).Bool("confirm", msg.Confirm).Msg("requested to remove external chunk")
+
 		if msg.Garbage {
 			err = dh.HandleDeleteGarbage(msg)
 			if err != nil {
@@ -416,10 +418,17 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			_ = ycl.ReplyError(err, "failed to upload")
 			return err
 		}
-		ylogger.Zero.Info().Msg("Deleted garbage successfully")
-		if !msg.Confirm {
-			ylogger.Zero.Warn().Msg("It was a dry-run, nothing was deleted")
+
+		if msg.Garbage {
+			if !msg.Confirm {
+				ylogger.Zero.Warn().Msg("It was a dry-run, nothing was deleted")
+			} else {
+				ylogger.Zero.Info().Msg("Deleted garbage successfully")
+			}
+		} else {
+			ylogger.Zero.Info().Msg("Deleted chunk successfully")
 		}
+
 	case message.MessageTypeGool:
 		return ProcMotion(s, cr, ycl)
 
