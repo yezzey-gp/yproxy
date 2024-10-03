@@ -398,7 +398,19 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			BackupInterractor:  backupHandler,
 		}
 
-		ylogger.Zero.Debug().Str("Name", msg.Name).Bool("garb", msg.Garbage).Bool("confirm", msg.Confirm).Msg("requested to remove external chunk")
+		if msg.Garbage {
+			ylogger.Zero.Debug().
+				Str("Name", msg.Name).
+				Uint64("port", msg.Port).
+				Uint64("segment", msg.Segnum).
+				Bool("confirm", msg.Confirm).Msg("requested to perform external storage VACUUM")
+		} else {
+			ylogger.Zero.Debug().
+				Str("Name", msg.Name).
+				Uint64("port", msg.Port).
+				Uint64("segment", msg.Segnum).
+				Bool("confirm", msg.Confirm).Msg("requested to remove external chunk")
+		}
 
 		if msg.Garbage {
 			err = dh.HandleDeleteGarbage(msg)
