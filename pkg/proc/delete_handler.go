@@ -2,9 +2,11 @@ package proc
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/backups"
 	"github.com/yezzey-gp/yproxy/pkg/database"
 	"github.com/yezzey-gp/yproxy/pkg/message"
@@ -22,6 +24,8 @@ type BasicDeleteHandler struct {
 	BackupInterractor  backups.BackupInterractor
 	DbInterractor      database.DatabaseInterractor
 	StorageInterractor storage.StorageInteractor
+
+	Cnf *config.Vacuum
 }
 
 func (dh *BasicDeleteHandler) HandleDeleteGarbage(msg message.DeleteMessage) error {
@@ -39,10 +43,26 @@ func (dh *BasicDeleteHandler) HandleDeleteGarbage(msg message.DeleteMessage) err
 	for len(fileList) > 0 && retryCount < 10 {
 		retryCount++
 		for i := 0; i < len(fileList); i++ {
-			filePathParts := strings.Split(fileList[i], "/")
-			err = dh.StorageInterractor.MoveObject(fileList[i], fmt.Sprintf("segments_005/seg%d/basebackups_005/yezzey/trash/%s", msg.Segnum, filePathParts[len(filePathParts)-1]))
+
+			if msg.CrazyDrop {
+				ylogger.Zero.Debug().Str("path", fileList[i]).Msg("simply delete without any 'plan B'")
+				err = dh.StorageInterractor.DeleteObject(fileList[i])
+
+			} else {
+
+				filePathParts := strings.Split(fileList[i], "/")
+
+				destPath := path.Join(
+					"trash",
+					"segments_005",
+					fmt.Sprintf("seg%d", msg.Segnum),
+					"basebackups_005",
+					"yezzey", filePathParts[len(filePathParts)-1])
+
+				err = dh.StorageInterractor.MoveObject(fileList[i], destPath)
+			}
 			if err != nil {
-				ylogger.Zero.Warn().AnErr("err", err).Str("file", fileList[i]).Msg("failed to move file")
+				ylogger.Zero.Warn().AnErr("err", err).Str("file", fileList[i]).Msg("failed to obsolete file")
 				failed = append(failed, fileList[i])
 			}
 		}
@@ -70,11 +90,19 @@ func (dh *BasicDeleteHandler) HandleDeleteFile(msg message.DeleteMessage) error 
 
 func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]string, error) {
 	//get firsr backup lsn
-	firstBackupLSN, err := dh.BackupInterractor.GetFirstLSN(msg.Segnum)
-	if err != nil {
-		ylogger.Zero.Error().AnErr("err", err).Msg("failed to get first lsn") //return or just assume there are no backups?
+	var firstBackupLSN uint64
+	var err error
+
+	if dh.Cnf.CheckBackup {
+		firstBackupLSN, err = dh.BackupInterractor.GetFirstLSN(msg.Segnum)
+		if err != nil {
+			ylogger.Zero.Error().AnErr("err", err).Msg("failed to get first lsn") //return or just assume there are no backups?
+		}
+		ylogger.Zero.Info().Uint64("lsn", firstBackupLSN).Msg("first backup LSN")
+	} else {
+		firstBackupLSN = ^uint64(0)
+		ylogger.Zero.Info().Uint64("lsn", firstBackupLSN).Msg("omit first backup LSN")
 	}
-	ylogger.Zero.Info().Uint64("lsn", firstBackupLSN).Msg("first backup LSN")
 
 	//list files in storage
 	ylogger.Zero.Info().Str("path", msg.Name).Msg("going to list path")
@@ -96,13 +124,19 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 	filesToDelete := make([]string, 0)
 	for i := 0; i < len(objectMetas); i++ {
 		reworkedName := ReworkFileName(objectMetas[i].Path)
+		ylogger.Zero.Debug().Str("reworked name", reworkedName).Msg("lookup chunk")
+
+		if vi[reworkedName] {
+			continue
+		}
+
 		lsn, ok := ei[reworkedName]
-		ylogger.Zero.Debug().Uint64("lsn", lsn).Uint64("backup lsn", firstBackupLSN).Msg("comparing lsn")
-		if !vi[reworkedName] && (lsn < firstBackupLSN || !ok) {
+		ylogger.Zero.Debug().Uint64("lsn", lsn).Uint64("backup lsn", firstBackupLSN).Str("path", objectMetas[i].Path).Msg("comparing lsn")
+		if lsn < firstBackupLSN || !ok {
 			ylogger.Zero.Debug().Str("file", objectMetas[i].Path).
 				Bool("file in expire index", ok).
 				Bool("lsn is less than in first backup", lsn < firstBackupLSN).
-				Msg("file does not persisnt in virtual index, not needed for PITR, so will be deleted")
+				Msg("file does not persisnt in virtual index, nor needed for PITR, so will be deleted")
 			filesToDelete = append(filesToDelete, objectMetas[i].Path)
 		}
 	}

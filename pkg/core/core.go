@@ -134,7 +134,7 @@ func (i *Instance) Run(instanceCnf *config.Instance) error {
 		defer clConn.Close()
 		ycl := client.NewYClient(clConn)
 		i.pool.Put(ycl)
-		if err := proc.ProcConn(s, cr, ycl); err != nil {
+		if err := proc.ProcConn(s, cr, ycl, &instanceCnf.VacuumCnf); err != nil {
 			ylogger.Zero.Debug().Uint("id", ycl.ID()).Err(err).Msg("got error serving client")
 		}
 		_, err := i.pool.Pop(ycl.ID())

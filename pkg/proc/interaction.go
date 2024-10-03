@@ -173,7 +173,7 @@ func ProcessPutExtended(
 	return nil
 }
 
-func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
+func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient, cnf *config.Vacuum) error {
 
 	defer func() {
 		_ = ycl.Close()
@@ -280,7 +280,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		if err != nil {
 			return err
 		}
-		fmt.Printf("ok new conf: %v\n", instanceCnf)
+		ylogger.Zero.Info().Interface("cnf", instanceCnf).Msg("loaded new config")
 
 		//list objects
 		objectMetas, err := oldStorage.ListPath(msg.Name)
@@ -396,6 +396,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			StorageInterractor: s,
 			DbInterractor:      dbInterractor,
 			BackupInterractor:  backupHandler,
+			Cnf:                cnf,
 		}
 
 		if msg.Garbage {
