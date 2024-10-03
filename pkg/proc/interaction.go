@@ -396,7 +396,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 			StorageInterractor: s,
 			DbInterractor:      dbInterractor,
 			BackupInterractor:  backupHandler,
-			cnf:                cnf,
+			Cnf:                cnf,
 		}
 
 		if msg.Garbage {

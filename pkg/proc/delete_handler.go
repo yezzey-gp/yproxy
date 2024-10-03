@@ -25,7 +25,7 @@ type BasicDeleteHandler struct {
 	DbInterractor      database.DatabaseInterractor
 	StorageInterractor storage.StorageInteractor
 
-	cnf *config.Vacuum
+	Cnf *config.Vacuum
 }
 
 func (dh *BasicDeleteHandler) HandleDeleteGarbage(msg message.DeleteMessage) error {
@@ -53,11 +53,11 @@ func (dh *BasicDeleteHandler) HandleDeleteGarbage(msg message.DeleteMessage) err
 				filePathParts := strings.Split(fileList[i], "/")
 
 				destPath := path.Join(
+					"trash",
 					"segments_005",
 					fmt.Sprintf("seg%d", msg.Segnum),
 					"basebackups_005",
-					"yezzey",
-					"trash", filePathParts[len(filePathParts)-1])
+					"yezzey", filePathParts[len(filePathParts)-1])
 
 				err = dh.StorageInterractor.MoveObject(fileList[i], destPath)
 			}
@@ -93,7 +93,7 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 	var firstBackupLSN uint64
 	var err error
 
-	if dh.cnf.CheckBackup {
+	if dh.Cnf.CheckBackup {
 		firstBackupLSN, err = dh.BackupInterractor.GetFirstLSN(msg.Segnum)
 		if err != nil {
 			ylogger.Zero.Error().AnErr("err", err).Msg("failed to get first lsn") //return or just assume there are no backups?
@@ -136,7 +136,7 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 			ylogger.Zero.Debug().Str("file", objectMetas[i].Path).
 				Bool("file in expire index", ok).
 				Bool("lsn is less than in first backup", lsn < firstBackupLSN).
-				Msg("file does not persisnt in virtual index, not needed for PITR, so will be deleted")
+				Msg("file does not persisnt in virtual index, nor needed for PITR, so will be deleted")
 			filesToDelete = append(filesToDelete, objectMetas[i].Path)
 		}
 	}

@@ -17,7 +17,7 @@ type Instance struct {
 
 	CryptoCnf Crypto `json:"crypto" toml:"crypto" yaml:"crypto"`
 
-	VacuumCnf Vacuum `json:"vacuum" toml:"vacuum" yaml:"vacuum`
+	VacuumCnf Vacuum `json:"vacuum" toml:"vacuum" yaml:"vacuum"`
 
 	LogPath                string `json:"log_path" toml:"log_path" yaml:"log_path"`
 	LogLevel               string `json:"log_level" toml:"log_level" yaml:"log_level"`

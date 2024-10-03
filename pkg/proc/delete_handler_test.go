@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/yezzey-gp/yproxy/config"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	mock "github.com/yezzey-gp/yproxy/pkg/mock"
 	"github.com/yezzey-gp/yproxy/pkg/object"
@@ -90,6 +91,7 @@ func TestFilesToDeletion(t *testing.T) {
 		StorageInterractor: storage,
 		DbInterractor:      database,
 		BackupInterractor:  backup,
+		Cnf:                &config.Vacuum{CheckBackup: true},
 	}
 
 	list, err := handler.ListGarbageFiles(msg)
