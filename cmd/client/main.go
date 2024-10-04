@@ -24,9 +24,11 @@ var (
 
 	decrypt bool
 	/* Put command flags */
-	encrypt      bool
-	storageClass string
-	tableSpace   string
+	encrypt             bool
+	storageClass        string
+	tableSpace          string
+	multipart_chunksize int64
+	multipart_threshold int64
 
 	offset uint64
 
@@ -114,6 +116,14 @@ func putFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 		{
 			Name:  message.TableSpaceSetting,
 			Value: tableSpace,
+		},
+		{
+			Name:  message.MultipartChunksize,
+			Value: fmt.Sprintf("%s", multipart_chunksize),
+		},
+		{
+			Name:  message.MultipartThreshold,
+			Value: fmt.Sprintf("%s", multipart_threshold),
 		},
 	}).Encode()
 	_, err := con.Write(msg)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/yezzey-gp/aws-sdk-go/aws"
@@ -69,13 +70,18 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 
 	objectPath := path.Join(s.cnf.StoragePrefix, name)
 
-	up := s3manager.NewUploaderWithClient(sess, func(uploader *s3manager.Uploader) {
-		uploader.PartSize = int64(1 << 24)
-		uploader.Concurrency = 1
-	})
-
 	storageClass := ResolveStorageSetting(settings, message.StorageClassSetting, "STANDARD")
 	tableSpace := ResolveStorageSetting(settings, message.TableSpaceSetting, tablespace.DefaultTableSpace)
+	multipartChunksizeStr := ResolveStorageSetting(settings, message.MultipartChunksize, "")
+	multipartChunksize, err := strconv.ParseInt(multipartChunksizeStr, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	up := s3manager.NewUploaderWithClient(sess, func(uploader *s3manager.Uploader) {
+		uploader.PartSize = int64(multipartChunksize)
+		uploader.Concurrency = 1
+	})
 
 	bucket, ok := s.bucketMap[tableSpace]
 	if !ok {

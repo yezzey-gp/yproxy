@@ -8,6 +8,8 @@ import (
 
 const StorageClassSetting = "StorageClass"
 const TableSpaceSetting = "TableSpace"
+const MultipartChunksize = "MultipartChunksize"
+const MultipartThreshold = "MultipartThreshold"
 
 type PutMessageV2 struct {
 	Encrypt bool
