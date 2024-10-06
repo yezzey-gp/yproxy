@@ -214,6 +214,69 @@ func listFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 	return nil
 }
 
+func deleteFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
+	ylogger.Zero.Info().Msg("Execute delete command")
+
+	ylogger.Zero.Info().Str("name", args[0]).Msg("delete")
+	msg := message.NewDeleteMessage(args[0], segmentPort, segmentNum, confirm, garbage).Encode()
+	_, err := con.Write(msg)
+	if err != nil {
+		return err
+	}
+
+	ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed delete msg")
+
+	client := client.NewYClient(con)
+	protoReader := proc.NewProtoReader(client)
+
+	ansType, body, err := protoReader.ReadPacket()
+	if err != nil {
+		ylogger.Zero.Debug().Err(err).Msg("error while recieving answer")
+		return err
+	}
+
+	if ansType != message.MessageTypeReadyForQuery {
+		return fmt.Errorf("failed to delete, msg: %v", body)
+	}
+
+	return nil
+}
+
+func goolFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
+	msg := message.NewGoolMessage(args[0]).Encode()
+	_, err := con.Write(msg)
+	if err != nil {
+		ylogger.Zero.Debug().Err(err)
+		return err
+	}
+
+	ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed gool message")
+
+	ycl := client.NewYClient(con)
+	r := proc.NewProtoReader(ycl)
+
+	done := false
+	for {
+		if done {
+			break
+		}
+		tp, _, err := r.ReadPacket()
+		if err != nil {
+			return err
+		}
+
+		switch tp {
+		case message.MessageTypeReadyForQuery:
+			ylogger.Zero.Debug().Bytes("msg", msg).Msg("got RFQ message")
+			done = true
+		default:
+			return fmt.Errorf("incorrect gool")
+		}
+	}
+
+	return nil
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "",
 	Short: "",
@@ -236,44 +299,7 @@ var copyCmd = &cobra.Command{
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ylogger.Zero.Info().Msg("Execute delete command")
-		err := config.LoadInstanceConfig(cfgPath)
-		if err != nil {
-			return err
-		}
-		instanceCnf := config.InstanceConfig()
-
-		con, err := net.Dial("unix", instanceCnf.SocketPath)
-		if err != nil {
-			return err
-		}
-		defer con.Close()
-
-		ylogger.Zero.Info().Str("name", args[0]).Msg("delete")
-		msg := message.NewDeleteMessage(args[0], segmentPort, segmentNum, confirm, garbage).Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			return err
-		}
-
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed delete msg")
-
-		client := client.NewYClient(con)
-		protoReader := proc.NewProtoReader(client)
-
-		ansType, body, err := protoReader.ReadPacket()
-		if err != nil {
-			ylogger.Zero.Debug().Err(err).Msg("error while recieving answer")
-			return err
-		}
-
-		if ansType != message.MessageTypeReadyForQuery {
-			return fmt.Errorf("failed to delete, msg: %v", body)
-		}
-
-		return nil
-	},
+	RunE:  Runner(deleteFunc),
 }
 
 var putCmd = &cobra.Command{
@@ -293,57 +319,7 @@ var listCmd = &cobra.Command{
 var goolCmd = &cobra.Command{
 	Use:   "gool",
 	Short: "gool",
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		err := config.LoadInstanceConfig(cfgPath)
-		if err != nil {
-			ylogger.Zero.Debug().Err(err)
-			return err
-		}
-
-		instanceCnf := config.InstanceConfig()
-
-		con, err := net.Dial("unix", instanceCnf.InterconnectSocketPath)
-
-		if err != nil {
-			ylogger.Zero.Debug().Err(err)
-			return err
-		}
-
-		defer con.Close()
-		msg := message.NewGoolMessage(args[0]).Encode()
-		_, err = con.Write(msg)
-		if err != nil {
-			ylogger.Zero.Debug().Err(err)
-			return err
-		}
-
-		ylogger.Zero.Debug().Bytes("msg", msg).Msg("constructed gool message")
-
-		ycl := client.NewYClient(con)
-		r := proc.NewProtoReader(ycl)
-
-		done := false
-		for {
-			if done {
-				break
-			}
-			tp, _, err := r.ReadPacket()
-			if err != nil {
-				return err
-			}
-
-			switch tp {
-			case message.MessageTypeReadyForQuery:
-				ylogger.Zero.Debug().Bytes("msg", msg).Msg("got RFQ message")
-				done = true
-			default:
-				return fmt.Errorf("incorrect gool")
-			}
-		}
-
-		return nil
-	},
+	RunE:  Runner(goolFunc),
 }
 
 func init() {
