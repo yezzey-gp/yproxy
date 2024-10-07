@@ -78,7 +78,7 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 	if err != nil {
 		return err
 	}
-	doMultipart, err := strconv.ParseBool(ResolveStorageSetting(settings, message.DoMultipart, "1"))
+	multipartUpload, err := strconv.ParseBool(ResolveStorageSetting(settings, message.MultipartUpload, "1"))
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 		return err
 	}
 
-	if doMultipart {
+	if multipartUpload {
 		_, err = up.Upload(
 			&s3manager.UploadInput{
 				Bucket:       aws.String(bucket),

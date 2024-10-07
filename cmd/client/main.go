@@ -28,7 +28,7 @@ var (
 	storageClass       string
 	tableSpace         string
 	multipartChunksize int64
-	doMultipart        bool
+	multipartUpload    bool
 
 	offset uint64
 
@@ -122,8 +122,8 @@ func putFunc(con net.Conn, instanceCnf *config.Instance, args []string) error {
 			Value: fmt.Sprintf("%d", multipartChunksize),
 		},
 		{
-			Name:  message.DoMultipart,
-			Value: fmt.Sprintf("%t", doMultipart),
+			Name:  message.MultipartUpload,
+			Value: fmt.Sprintf("%t", multipartUpload),
 		},
 	}).Encode()
 	_, err := con.Write(msg)
