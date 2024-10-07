@@ -9,7 +9,7 @@ import (
 const StorageClassSetting = "StorageClass"
 const TableSpaceSetting = "TableSpace"
 const MultipartChunksize = "MultipartChunksize"
-const MultipartThreshold = "MultipartThreshold"
+const DoMultipart = "DoMultipart"
 
 type PutMessageV2 struct {
 	Encrypt bool

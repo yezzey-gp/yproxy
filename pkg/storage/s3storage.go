@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -77,6 +78,10 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 	if err != nil {
 		return err
 	}
+	doMultipart, err := strconv.ParseBool(ResolveStorageSetting(settings, message.DoMultipart, "1"))
+	if err != nil {
+		return err
+	}
 
 	up := s3manager.NewUploaderWithClient(sess, func(uploader *s3manager.Uploader) {
 		uploader.PartSize = int64(multipartChunksize)
@@ -90,14 +95,28 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 		return err
 	}
 
-	_, err = up.Upload(
-		&s3manager.UploadInput{
+	if doMultipart {
+		_, err = up.Upload(
+			&s3manager.UploadInput{
+				Bucket:       aws.String(bucket),
+				Key:          aws.String(objectPath),
+				Body:         r,
+				StorageClass: aws.String(storageClass),
+			},
+		)
+	} else {
+		var body []byte
+		body, err = io.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		_, err = sess.PutObject(&s3.PutObjectInput{
 			Bucket:       aws.String(bucket),
 			Key:          aws.String(objectPath),
-			Body:         r,
+			Body:         bytes.NewReader(body),
 			StorageClass: aws.String(storageClass),
-		},
-	)
+		})
+	}
 
 	return err
 }
