@@ -172,7 +172,7 @@ func ProcessPutExtended(
 
 	return nil
 }
-func procCopy(msg message.CopyMessage, s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
+func ProcessCopyExtended(msg message.CopyMessage, s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
 
 	ycl.SetExternalFilePath(msg.Name)
 
@@ -289,7 +289,7 @@ func procCopy(msg message.CopyMessage, s storage.StorageInteractor, cr crypt.Cry
 	ylogger.Zero.Info().Msg("Copy finished successfully")
 	return nil
 }
-func procDelete(msg message.DeleteMessage, s storage.StorageInteractor, ycl client.YproxyClient, cnf *config.Vacuum) error {
+func ProcessDeleteExtended(msg message.DeleteMessage, s storage.StorageInteractor, ycl client.YproxyClient, cnf *config.Vacuum) error {
 	ycl.SetExternalFilePath(msg.Name)
 
 	dbInterractor := &database.DatabaseHandler{}
@@ -441,7 +441,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		msg := message.CopyMessage{}
 		msg.Decode(body)
 
-		err := procCopy(msg, s, cr, ycl)
+		err := ProcessCopyExtended(msg, s, cr, ycl)
 		if err != nil {
 			return err
 		}
@@ -449,7 +449,7 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		//recieve message
 		msg := message.DeleteMessage{}
 		msg.Decode(body)
-		err := procDelete(msg, s, ycl, cnf)
+		err := ProcessDeleteExtended(msg, s, ycl, cnf)
 		if err != nil {
 			return err
 		}
