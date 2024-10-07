@@ -172,6 +172,37 @@ func ProcessPutExtended(
 
 	return nil
 }
+func ProcessListExtended(msg message.ListMessage, s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient, cnf *config.Vacuum) error {
+	ycl.SetExternalFilePath(msg.Prefix)
+
+	objectMetas, err := s.ListPath(msg.Prefix)
+	if err != nil {
+		_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
+
+		return nil
+	}
+
+	const chunkSize = 1000
+
+	for i := 0; i < len(objectMetas); i += chunkSize {
+		_, err = ycl.GetRW().Write(message.NewObjectMetaMessage(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
+		if err != nil {
+			_ = ycl.ReplyError(err, "failed to upload")
+
+			return nil
+		}
+
+	}
+
+	_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
+
+	if err != nil {
+		_ = ycl.ReplyError(err, "failed to upload")
+
+		return err
+	}
+	return nil
+}
 func ProcessCopyExtended(msg message.CopyMessage, s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyClient) error {
 
 	ycl.SetExternalFilePath(msg.Name)
@@ -408,35 +439,10 @@ func ProcConn(s storage.StorageInteractor, cr crypt.Crypter, ycl client.YproxyCl
 		msg := message.ListMessage{}
 		msg.Decode(body)
 
-		ycl.SetExternalFilePath(msg.Prefix)
-
-		objectMetas, err := s.ListPath(msg.Prefix)
+		err := ProcessListExtended(msg, s, cr, ycl, cnf)
 		if err != nil {
-			_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
-
-			return nil
-		}
-
-		const chunkSize = 1000
-
-		for i := 0; i < len(objectMetas); i += chunkSize {
-			_, err = ycl.GetRW().Write(message.NewObjectMetaMessage(objectMetas[i:min(i+chunkSize, len(objectMetas))]).Encode())
-			if err != nil {
-				_ = ycl.ReplyError(err, "failed to upload")
-
-				return nil
-			}
-
-		}
-
-		_, err = ycl.GetRW().Write(message.NewReadyForQueryMessage().Encode())
-
-		if err != nil {
-			_ = ycl.ReplyError(err, "failed to upload")
-
 			return err
 		}
-
 	case message.MessageTypeCopy:
 		msg := message.CopyMessage{}
 		msg.Decode(body)
