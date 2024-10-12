@@ -166,6 +166,7 @@ func (s *S3StorageInteractor) ListPath(prefix string) ([]*object.ObjectInfo, err
 		out, err := sess.ListObjectsV2(input)
 		if err != nil {
 			fmt.Printf("list error: %v\n", err)
+			return nil, err
 		}
 
 		for _, obj := range out.Contents {
