@@ -121,7 +121,7 @@ func ProcessPutExtended(
 					return
 				} else if n != int(msg.Sz) {
 
-					_ = ycl.ReplyError(fmt.Errorf("unfull write"), "failed to compelete request")
+					_ = ycl.ReplyError(fmt.Errorf("unfull write"), "failed to complete request")
 
 					return
 				}
@@ -177,7 +177,7 @@ func ProcessListExtended(msg message.ListMessage, s storage.StorageInteractor, c
 
 	objectMetas, err := s.ListPath(msg.Prefix)
 	if err != nil {
-		_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to compelete request")
+		_ = ycl.ReplyError(fmt.Errorf("could not list objects: %s", err), "failed to complete request")
 
 		return nil
 	}
