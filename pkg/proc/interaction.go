@@ -227,12 +227,23 @@ func ProcessCopyExtended(msg message.CopyMessage, s storage.StorageInteractor, c
 		return nil
 	}
 
+	dbInterractor := &database.DatabaseHandler{}
+	vi, _, err := dbInterractor.GetVirtualExpireIndexes(msg.Port)
+	if err != nil {
+		return err
+	}
+
 	var failed []*object.ObjectInfo
 	retryCount := 0
 	for len(objectMetas) > 0 && retryCount < 10 {
 		retryCount++
 		for i := 0; i < len(objectMetas); i++ {
 			path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
+			reworked := ReworkFileName(path)
+			if _, ok := vi[reworked]; !ok {
+				continue
+			}
+
 			//get reader
 			readerFromOldBucket := NewYRetryReader(NewRestartReader(oldStorage, path, nil))
 			var fromReader io.Reader
