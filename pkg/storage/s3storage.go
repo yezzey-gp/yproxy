@@ -73,7 +73,7 @@ func (s *S3StorageInteractor) PutFileToDest(name string, r io.Reader, settings [
 
 	storageClass := ResolveStorageSetting(settings, message.StorageClassSetting, "STANDARD")
 	tableSpace := ResolveStorageSetting(settings, message.TableSpaceSetting, tablespace.DefaultTableSpace)
-	multipartChunksizeStr := ResolveStorageSetting(settings, message.MultipartChunksize, "")
+	multipartChunksizeStr := ResolveStorageSetting(settings, message.MultipartChunksize, "16777216")
 	multipartChunksize, err := strconv.ParseInt(multipartChunksizeStr, 10, 64)
 	if err != nil {
 		return err
