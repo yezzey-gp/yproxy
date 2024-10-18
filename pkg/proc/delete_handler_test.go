@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yezzey-gp/yproxy/config"
+	"github.com/yezzey-gp/yproxy/pkg/database"
 	"github.com/yezzey-gp/yproxy/pkg/message"
 	mock "github.com/yezzey-gp/yproxy/pkg/mock"
 	"github.com/yezzey-gp/yproxy/pkg/object"
@@ -46,7 +47,7 @@ func TestReworkingName(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		ans := proc.ReworkFileName(testCase.input)
+		ans := database.ReworkFileName(testCase.input)
 		assert.Equal(t, testCase.expected, ans)
 	}
 }
