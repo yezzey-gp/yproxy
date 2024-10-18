@@ -81,12 +81,7 @@ func (database *DatabaseHandler) GetVirtualExpireIndexes(port uint64) (map[strin
 		if err := rows2.Scan(&xpath); err != nil {
 			return nil, nil, fmt.Errorf("unable to parse query output %v", err)
 		}
-		p1 := strings.Split(xpath, "/")
-		p2 := p1[len(p1)-1]
-		p3 := strings.Split(p2, "_")
-		if len(p3) >= 4 {
-			p2 = fmt.Sprintf("%s_%s_%s_%s_", p3[0], p3[1], p3[2], p3[3])
-		}
+		p2 := ReworkFileName(xpath)
 		c2[p2] = true
 		ylogger.Zero.Debug().Str("file", p2).Msg("added")
 	}
@@ -174,4 +169,10 @@ func connectToDatabase(port uint64, database string) (*pgx.Conn, error) {
 		}
 	}
 	return conn, nil
+}
+
+func ReworkFileName(str string) string {
+	p1 := strings.Split(str, "/")
+	p2 := strings.Join(p1, "_")
+	return p2
 }

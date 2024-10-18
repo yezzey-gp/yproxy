@@ -82,7 +82,7 @@ func (dh *BasicDeleteHandler) HandleDeleteGarbage(msg message.DeleteMessage) err
 func (dh *BasicDeleteHandler) HandleDeleteFile(msg message.DeleteMessage) error {
 	err := dh.StorageInterractor.DeleteObject(msg.Name)
 	if err != nil {
-		ylogger.Zero.Error().AnErr("err", err).Msg("failed to delete file")
+		ylogger.Zero.Error().AnErr("err", err).Msg("failed to delete file " + msg.Name)
 		return errors.Wrap(err, "failed to delete file")
 	}
 	return nil
@@ -123,7 +123,7 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 
 	filesToDelete := make([]string, 0)
 	for i := 0; i < len(objectMetas); i++ {
-		reworkedName := ReworkFileName(objectMetas[i].Path)
+		reworkedName := database.ReworkFileName(objectMetas[i].Path)
 		ylogger.Zero.Debug().Str("reworked name", reworkedName).Msg("lookup chunk")
 
 		if vi[reworkedName] {
@@ -144,14 +144,4 @@ func (dh *BasicDeleteHandler) ListGarbageFiles(msg message.DeleteMessage) ([]str
 	ylogger.Zero.Info().Int("amount", len(filesToDelete)).Msg("files will be deleted")
 
 	return filesToDelete, nil
-}
-
-func ReworkFileName(str string) string {
-	p1 := strings.Split(str, "/")
-	p2 := p1[len(p1)-1]
-	p3 := strings.Split(p2, "_")
-	if len(p3) >= 4 {
-		p2 = fmt.Sprintf("%s_%s_%s_%s_", p3[0], p3[1], p3[2], p3[3])
-	}
-	return p2
 }
