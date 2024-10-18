@@ -46,11 +46,12 @@ func (s *FileStorageInteractor) ListPath(prefix string) ([]*object.ObjectInfo, e
 		if err != nil {
 			return err
 		}
-		cPath, ok := strings.CutPrefix(path, prefix)
+		cPath, ok := strings.CutPrefix(path, s.cnf.StoragePrefix)
+
 		if !ok {
 			return err
 		}
-		data = append(data, &object.ObjectInfo{Path: cPath, Size: fileinfo.Size()})
+		data = append(data, &object.ObjectInfo{Path: "/" + cPath, Size: fileinfo.Size()})
 		return nil
 	})
 	return data, err
