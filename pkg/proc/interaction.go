@@ -233,6 +233,15 @@ func ProcessCopyExtended(msg message.CopyMessage, s storage.StorageInteractor, c
 		return err
 	}
 
+	copied, err := s.ListPath(msg.Name)
+	if err != nil {
+		return err
+	}
+	copiedSizes := make(map[string]int64)
+	for _, c := range copied {
+		copiedSizes[c.Path] = c.Size
+	}
+
 	var failed []*object.ObjectInfo
 	retryCount := 0
 	for len(objectMetas) > 0 && retryCount < 10 {
@@ -241,6 +250,11 @@ func ProcessCopyExtended(msg message.CopyMessage, s storage.StorageInteractor, c
 			path := strings.TrimPrefix(objectMetas[i].Path, instanceCnf.StorageCnf.StoragePrefix)
 			reworked := ReworkFileName(path)
 			if _, ok := vi[reworked]; !ok {
+				ylogger.Zero.Debug().Str("object path", objectMetas[i].Path).Msg("not in virtual index, skipping...")
+				continue
+			}
+			if size, ok := copiedSizes[objectMetas[i].Path]; ok && size == objectMetas[i].Size {
+				ylogger.Zero.Debug().Str("object path", objectMetas[i].Path).Int64("object size", objectMetas[i].Size).Msg("already copied, skipping...")
 				continue
 			}
 
